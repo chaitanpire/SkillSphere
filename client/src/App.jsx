@@ -5,6 +5,7 @@ import SignupPage from './pages/SignupPage';
 import Dashboard from './pages/Dashboard';
 import Navbar from './components/Navbar';
 import { AuthProvider, useAuth } from './context/AuthContext';
+import PostProject from './pages/PostProject';
 
 function ProtectedRoute({ children }) {
   const { user } = useAuth();
@@ -20,6 +21,7 @@ function App() {
           <Route path="/" element={<LoginPage />} />
           <Route path="/signup" element={<SignupPage />} />
           <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
+          <Route path="/post-project" element={<PostProject />} />
         </Routes>
       </Router>
     </AuthProvider>
