@@ -49,11 +49,12 @@ export default function Navbar() {
                 {user && (
                     <>
                         <Link to="/dashboard" style={linkStyle}>Dashboard</Link>
+                        <span style={{ color: '#fff', margin: '0 10px' }}>|</span>
+                        <Link to="/profile/:id" style={linkStyle}>My Profile</Link>
                     </>
                 )}
 
-                <span style={{ color: '#fff', margin: '0 10px' }}>|</span>
-                <Link to="/" style={linkStyle}>IDK</Link>
+                
             </div>
             {user && (
                 <button
