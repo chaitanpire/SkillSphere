@@ -13,3 +13,4 @@ backend/*
 skillsphere-frontend/*
 !skillsphere-frontend/src/
 !skillsphere-frontend/public/
+
