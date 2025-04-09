@@ -13,7 +13,6 @@
 !server/
 
 # Allow the .env file in the server folder
-!server/.env
 # Inside the server folder: ignore everything except specific files and folders
 server/*
 !server/index.js
@@ -25,6 +24,7 @@ server/*
 !server/models/** 
 !server/routes
 !server/routes/**
+!server/.env
 
 # Inside the client folder: ignore everything except src and public
 client/*
