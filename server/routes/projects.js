@@ -26,6 +26,9 @@ function requireClient(req, res, next) {
 router.post('/', requireClient, async (req, res) => {
     const { title, description, budget, deadline } = req.body;
     const clientId = req.user.id;
+    console.log('Received project:', req.body);
+    console.log('Authenticated client ID:', req.user.id);
+
 
     try {
         const result = await pool.query(
@@ -39,5 +42,22 @@ router.post('/', requireClient, async (req, res) => {
         res.status(500).json({ error: 'Failed to post project' });
     }
 });
+
+// GET /api/projects — Get all available projects
+router.get('/', async (req, res) => {
+    try {
+        const result = await pool.query(`
+        SELECT projects.*, users.name AS client_name
+        FROM projects
+        JOIN users ON projects.client_id = users.id
+        ORDER BY projects.created_at DESC
+      `);
+        res.json(result.rows);
+    } catch (err) {
+        console.error('Error fetching projects:', err);
+        res.status(500).json({ error: 'Failed to fetch projects' });
+    }
+});
+
 
 module.exports = router;
