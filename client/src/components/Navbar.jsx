@@ -38,9 +38,21 @@ export default function Navbar() {
     return (
         <nav style={navStyle}>
             <div>
-                <Link to="/" style={linkStyle}>Login</Link>
-                <Link to="/signup" style={linkStyle}>Signup</Link>
-                {user && <Link to="/dashboard" style={linkStyle}>Dashboard</Link>}
+                {!user && (
+                    <>
+                        <Link to="/" style={linkStyle}>Login</Link>
+                        <span style={{ color: '#fff', margin: '0 10px' }}>|</span>
+                        <Link to="/signup" style={linkStyle}>Signup</Link>
+                    </>
+                )}
+                
+                {user && (
+                    <>
+                        <Link to="/dashboard" style={linkStyle}>Dashboard</Link>
+                        <span style={{ color: '#fff', margin: '0 10px' }}>|</span>
+                        <Link to="/idk" style={linkStyle}>IDK</Link>
+                    </>
+                )}
             </div>
             {user && (
                 <button
