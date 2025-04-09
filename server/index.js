@@ -7,6 +7,10 @@ const app = express();
 const projectRoutes = require('./routes/projects');
 app.use('/api/projects', projectRoutes);
 
+const userRoutes = require('./routes/users');
+app.use('/api/users', userRoutes);
+
+
 app.use(cors());
 app.use(express.json());
 

@@ -7,6 +7,8 @@ import Dashboard from './pages/Dashboard';
 import Navbar from './components/Navbar';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import PostProject from './pages/PostProject';
+import ProfilePage from './pages/ProfilePage';
+
 
 function ProtectedRoute({ children }) {
   const { user } = useAuth();
@@ -19,11 +21,13 @@ function App() {
       <Router>
         <Navbar />
         <Routes>
-        <Route path="/" element={<HomePage />} />
+          <Route path="/" element={<HomePage />} />
           <Route path="/login" element={<LoginPage />} />
           <Route path="/signup" element={<SignupPage />} />
           <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
           <Route path="/post-project" element={<PostProject />} />
+          <Route path="/profile/:id" element={<ProfilePage />} />
+
         </Routes>
       </Router>
     </AuthProvider>
