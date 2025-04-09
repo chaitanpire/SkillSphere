@@ -11,8 +11,7 @@
 # Allow the client and server folders
 !client/
 !server/
-!client/package.json
-!server/package.json
+
 # Allow the .env file in the server folder
 !server/.env
 # Inside the server folder: ignore everything except specific files and folders
@@ -34,3 +33,6 @@ client/*
 !client/public/** 
 !client/public
 !client/index.html
+
+!client/package.json
+!server/package.json
