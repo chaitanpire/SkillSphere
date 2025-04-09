@@ -2,6 +2,8 @@ import React from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 
+
+
 export default function Navbar() {
     const { user, logout } = useAuth();
 
@@ -45,7 +47,7 @@ export default function Navbar() {
                         <Link to="/signup" style={linkStyle}>Signup</Link>
                     </>
                 )}
-                
+
                 {user && (
                     <>
                         <Link to="/dashboard" style={linkStyle}>Dashboard</Link>
@@ -62,7 +64,15 @@ export default function Navbar() {
                     </>
                 )}
 
-                
+                {user && user.role === 'freelancer' && (
+                    <>
+                        <span style={{ color: '#fff', margin: '0 10px' }}>|</span>
+                        <Link to="/projects" style={linkStyle}>Browse Projects</Link>
+                    </>
+                )}
+
+
+
             </div>
             {user && (
                 <button

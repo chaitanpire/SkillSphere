@@ -8,6 +8,7 @@ import Navbar from './components/Navbar';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import PostProject from './pages/PostProject';
 import ProfilePage from './pages/ProfilePage';
+import AvailableProjects from './pages/AvailableProjects';
 
 function ProtectedRoute({ children }) {
   const { user } = useAuth();
@@ -26,6 +27,8 @@ function App() {
           <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
           <Route path="/post-project" element={<ProtectedRoute><PostProject /></ProtectedRoute>} />
           <Route path="/profile/:id" element={<ProtectedRoute><ProfilePage /></ProtectedRoute>} />
+          <Route path="/projects" element={<ProtectedRoute><AvailableProjects /></ProtectedRoute>} />
+
         </Routes>
       </Router>
     </AuthProvider>

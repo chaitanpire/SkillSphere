@@ -14,25 +14,28 @@ export default function PostProject() {
     const handleChange = e =>
         setFormData({ ...formData, [e.target.name]: e.target.value });
 
-    const handleSubmit = async e => {
+    const handleSubmit = async (e) => {
         e.preventDefault();
         const token = localStorage.getItem('token');
 
-        const res = await fetch('http://localhost:4000/api/projects', {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                Authorization: `Bearer ${token}`,
-            },
-            body: JSON.stringify(formData),
-        });
+        try {
+            const res = await fetch('http://localhost:4000/api/projects', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    Authorization: `Bearer ${token}`
+                },
+                body: JSON.stringify(formData) // ✅ was projectData
+            });
 
-        const data = await res.json();
-        if (res.ok) {
-            alert('Project posted!');
-            navigate('/dashboard');
-        } else {
-            alert(data.error || 'Failed to post project');
+            const data = await res.json();
+            if (res.ok) {
+                alert('Project posted successfully!');
+            } else {
+                alert(data.error || 'Failed to post project');
+            }
+        } catch (err) {
+            console.error('Post failed:', err.message);
         }
     };
 
