@@ -54,6 +54,13 @@ export default function Navbar() {
                     </>
                 )}
 
+                {user && user.role === 'client' && (
+                    <>
+                        <span style={{ color: '#fff', margin: '0 10px' }}>|</span>
+                        <Link to="/post-project" style={linkStyle}>Add Project</Link>
+                    </>
+                )}
+
                 
             </div>
             {user && (
@@ -61,7 +68,10 @@ export default function Navbar() {
                     style={buttonStyle}
                     onMouseOver={(e) => e.target.style.background = buttonHoverStyle.background}
                     onMouseOut={(e) => e.target.style.background = buttonStyle.background}
-                    onClick={logout}
+                    onClick={() => {
+                        logout();
+                        window.location.href = '/';
+                    }}
                 >
                     Logout
                 </button>
