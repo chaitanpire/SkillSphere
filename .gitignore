@@ -1,2 +1,15 @@
-backend/*
+# Ignore everything by default
+*
+
+# Allow these top-level files/folders
 !backend/
+!skillsphere-frontend/
+
+# Inside backend: ignore everything except App.js
+backend/*
+!backend/App.js
+
+# Inside skillsphere-frontend: allow only src and public
+skillsphere-frontend/*
+!skillsphere-frontend/src/
+!skillsphere-frontend/public/
