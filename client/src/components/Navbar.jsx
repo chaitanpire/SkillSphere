@@ -5,15 +5,52 @@ import { useAuth } from '../context/AuthContext';
 export default function Navbar() {
     const { user, logout } = useAuth();
 
+    const navStyle = {
+        display: 'flex',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        padding: '10px 20px',
+        background: '#333',
+        color: '#fff',
+        boxShadow: '0 4px 6px rgba(0, 0, 0, 0.1)',
+    };
+
+    const linkStyle = {
+        marginRight: '15px',
+        textDecoration: 'none',
+        color: '#fff',
+        fontWeight: 'bold',
+    };
+
+    const buttonStyle = {
+        background: '#ff4d4d',
+        color: '#fff',
+        border: 'none',
+        padding: '5px 10px',
+        borderRadius: '5px',
+        cursor: 'pointer',
+    };
+
+    const buttonHoverStyle = {
+        background: '#ff1a1a',
+    };
+
     return (
-        <nav style={{ padding: '10px', background: '#eee' }}>
-            <Link to="/" style={{ marginRight: '10px' }}>Login</Link>
-            <Link to="/signup" style={{ marginRight: '10px' }}>Signup</Link>
+        <nav style={navStyle}>
+            <div>
+                <Link to="/" style={linkStyle}>Login</Link>
+                <Link to="/signup" style={linkStyle}>Signup</Link>
+                {user && <Link to="/dashboard" style={linkStyle}>Dashboard</Link>}
+            </div>
             {user && (
-                <>
-                    <Link to="/dashboard" style={{ marginRight: '10px' }}>Dashboard</Link>
-                    <button onClick={logout}>Logout</button>
-                </>
+                <button
+                    style={buttonStyle}
+                    onMouseOver={(e) => e.target.style.background = buttonHoverStyle.background}
+                    onMouseOut={(e) => e.target.style.background = buttonStyle.background}
+                    onClick={logout}
+                >
+                    Logout
+                </button>
             )}
         </nav>
     );
