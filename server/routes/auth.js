@@ -50,11 +50,15 @@ router.get('/dashboard', async (req, res) => {
 
     try {
         const decoded = jwt.verify(auth.split(' ')[1], process.env.JWT_SECRET);
-        const result = await pool.query('SELECT id, name, email, role FROM users WHERE id = $1', [decoded.id]);
-        res.json({ user: result.rows[0] });
+        const result = await pool.query(
+            'SELECT id, name, email, role FROM users WHERE id = $1',
+            [decoded.id]
+        );
+        res.json({ user: result.rows[0] }); // ← make sure you're returning this!
     } catch (err) {
         res.status(401).json({ error: 'Invalid token' });
     }
 });
+
 
 module.exports = router;
