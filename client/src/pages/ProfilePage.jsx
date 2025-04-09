@@ -4,14 +4,30 @@ import { useParams } from 'react-router-dom';
 export default function ProfilePage() {
     const { id } = useParams();
     const [user, setUser] = useState(null);
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState(null);
 
     useEffect(() => {
-        fetch(`http://localhost:4000/api/users/${id}`)
-            .then(res => res.json())
-            .then(data => setUser(data));
+        const fetchUser = async () => {
+            try {
+                const response = await fetch(`http://localhost:4000/api/users/${id}`);
+                if (!response.ok) {
+                    throw new Error(`Error: ${response.status} ${response.statusText}`);
+                }
+                const data = await response.json();
+                setUser(data);
+            } catch (err) {
+                setError(err.message);
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        fetchUser();
     }, [id]);
 
-    if (!user) return <p>Loading profile...</p>;
+    if (loading) return <p>Loading profile...</p>;
+    if (error) return <p>Error loading profile: {error}</p>;
 
     return (
         <div>

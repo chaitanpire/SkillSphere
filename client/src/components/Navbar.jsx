@@ -50,7 +50,8 @@ export default function Navbar() {
                     <>
                         <Link to="/dashboard" style={linkStyle}>Dashboard</Link>
                         <span style={{ color: '#fff', margin: '0 10px' }}>|</span>
-                        <Link to="/profile/:id" style={linkStyle}>My Profile</Link>
+                        <Link to={`/profile/${user.id}`} style={linkStyle}>My Profile</Link>
+
                     </>
                 )}
 

@@ -1,12 +1,13 @@
 const express = require('express');
 const cors = require('cors');
+
 require('dotenv').config();
 
 const app = express();
 
 const projectRoutes = require('./routes/projects');
 app.use('/api/projects', projectRoutes);
-
+app.use(cors({ origin: 'http://localhost:5173' }));
 const userRoutes = require('./routes/users');
 app.use('/api/users', userRoutes);
 

@@ -9,7 +9,6 @@ import { AuthProvider, useAuth } from './context/AuthContext';
 import PostProject from './pages/PostProject';
 import ProfilePage from './pages/ProfilePage';
 
-
 function ProtectedRoute({ children }) {
   const { user } = useAuth();
   return user ? children : <Navigate to="/" />;
@@ -25,9 +24,8 @@ function App() {
           <Route path="/login" element={<LoginPage />} />
           <Route path="/signup" element={<SignupPage />} />
           <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
-          <Route path="/post-project" element={<PostProject />} />
-          <Route path="/profile/:id" element={<ProfilePage />} />
-
+          <Route path="/post-project" element={<ProtectedRoute><PostProject /></ProtectedRoute>} />
+          <Route path="/profile/:id" element={<ProtectedRoute><ProfilePage /></ProtectedRoute>} />
         </Routes>
       </Router>
     </AuthProvider>
