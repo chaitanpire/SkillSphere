@@ -1,6 +1,6 @@
 # Ignore everything by default
 *
-
+!.gitignore
 # Allow these top-level files/folders
 !backend/
 !skillsphere-frontend/
