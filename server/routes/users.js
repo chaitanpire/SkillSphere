@@ -29,4 +29,36 @@ router.get('/:id', async (req, res) => {
     }
 });
 
+router.put('/:id/profile', async (req, res) => {
+    const userId = parseInt(req.params.id);
+    const { bio, location, hourly_rate, experience } = req.body;
+
+    try {
+        // Check if profile exists
+        const check = await pool.query('SELECT * FROM profiles WHERE user_id = $1', [userId]);
+
+        if (check.rows.length > 0) {
+            // Update existing profile
+            const result = await pool.query(
+                `UPDATE profiles SET bio = $1, location = $2, hourly_rate = $3, experience = $4
+           WHERE user_id = $5 RETURNING *`,
+                [bio, location, hourly_rate, experience, userId]
+            );
+            res.json(result.rows[0]);
+        } else {
+            // Create new profile
+            const result = await pool.query(
+                `INSERT INTO profiles (user_id, bio, location, hourly_rate, experience)
+           VALUES ($1, $2, $3, $4, $5) RETURNING *`,
+                [userId, bio, location, hourly_rate, experience]
+            );
+            res.json(result.rows[0]);
+        }
+    } catch (err) {
+        console.error('Error updating profile:', err.message);
+        res.status(500).json({ error: 'Failed to update profile' });
+    }
+});
+
+
 module.exports = router;

@@ -9,6 +9,9 @@ import { AuthProvider, useAuth } from './context/AuthContext';
 import PostProject from './pages/PostProject';
 import ProfilePage from './pages/ProfilePage';
 import AvailableProjects from './pages/AvailableProjects';
+import EditProfile from './pages/EditProfile';
+
+
 
 function ProtectedRoute({ children }) {
   const { user } = useAuth();
@@ -28,7 +31,7 @@ function App() {
           <Route path="/post-project" element={<ProtectedRoute><PostProject /></ProtectedRoute>} />
           <Route path="/profile/:id" element={<ProtectedRoute><ProfilePage /></ProtectedRoute>} />
           <Route path="/projects" element={<ProtectedRoute><AvailableProjects /></ProtectedRoute>} />
-
+          <Route path="/edit-profile" element={<ProtectedRoute><EditProfile /></ProtectedRoute>} />
         </Routes>
       </Router>
     </AuthProvider>
