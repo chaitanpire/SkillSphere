@@ -133,3 +133,4 @@ CREATE TABLE analytics_events (
     event_data JSONB,
     timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
+ALTER TABLE projects ADD COLUMN status VARCHAR(20) DEFAULT 'active';
