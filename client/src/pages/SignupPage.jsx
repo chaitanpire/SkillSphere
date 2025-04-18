@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+import '../styles/AuthPages.css';
 
 export default function SignupPage() {
   const [formData, setFormData] = useState({ name: '', email: '', password: '', role: 'freelancer' });
@@ -23,17 +24,51 @@ export default function SignupPage() {
   };
 
   return (
-    <form onSubmit={handleSubmit}>
-      <h2>Sign Up</h2>
-      <input name="name" placeholder="Name" onChange={handleChange} required />
-      <input name="email" placeholder="Email" onChange={handleChange} required />
-      <input name="password" type="password" placeholder="Password" onChange={handleChange} required />
-      <select name="role" onChange={handleChange}>
-        <option value="freelancer">Freelancer</option>
-        <option value="client">Client</option>
-      </select>
-      <button type="submit">Sign Up</button>
-      <p>Already have an account? <Link to="/">Login</Link></p>
-    </form>
+    <div className="auth-background">
+      <div className="auth-container">
+        <div className="auth-header">
+          <Link to="/" className="auth-logo">SkillSphere</Link>
+        </div>
+        <form className="auth-form" onSubmit={handleSubmit}>
+          <h2 className="auth-title">Get Started</h2>
+          <input
+            className="auth-input"
+            name="name"
+            placeholder="Full Name"
+            onChange={handleChange}
+            required
+          />
+          <input
+            className="auth-input"
+            name="email"
+            type="email"
+            placeholder="Email"
+            onChange={handleChange}
+            required
+          />
+          <input
+            className="auth-input"
+            name="password"
+            type="password"
+            placeholder="Password"
+            onChange={handleChange}
+            required
+          />
+          <select
+            className="auth-select"
+            name="role"
+            onChange={handleChange}
+            value={formData.role}
+          >
+            <option value="freelancer">Freelancer</option>
+            <option value="client">Client</option>
+          </select>
+          <button type="submit" className="auth-button">Create Account</button>
+          <p className="auth-link-text">
+            Already have an account? <Link to="/login" className="auth-link">Login</Link>
+          </p>
+        </form>
+      </div>
+    </div>
   );
 }

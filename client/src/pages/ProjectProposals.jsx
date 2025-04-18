@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import '../ProjectProposals.css';
+import '../styles/ProjectProposals.css';
 
 export default function ProjectProposals() {
     const { id: projectId } = useParams();

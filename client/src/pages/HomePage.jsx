@@ -1,33 +1,72 @@
 import React, { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import '../styles/HomePage.css'; // Create this CSS file
 
 const HomePage = () => {
-    const { user } = useAuth(); // Get the current user from the AuthContext
+    const { user } = useAuth();
     const navigate = useNavigate();
 
     useEffect(() => {
         if (user) {
-            // Redirect to the dashboard if the user is logged in
             navigate('/dashboard');
-        } else {
-            // Optionally, you can redirect to a different page if the user is not logged in
-            navigate('/login');
         }
     }, [user, navigate]);
 
     return (
-        <div style={{ textAlign: 'center', padding: '50px' }}>
-            <h1>Welcome to SkillSphere</h1>
-            <p>Your platform for managing and showcasing skills.</p>
-            <div style={{ marginTop: '20px' }}>
-                <a href="/login" style={{ marginRight: '15px', textDecoration: 'none', color: '#007BFF' }}>
-                    Login
-                </a>
-                <a href="/signup" style={{ textDecoration: 'none', color: '#007BFF' }}>
-                    Signup
-                </a>
-            </div>
+        <div className="home-container">
+            <header className="hero-section">
+                <div className="hero-content">
+                    <h1 className="hero-title">Welcome to <span>SkillSphere</span></h1>
+                    <p className="hero-subtitle">Connect with top talent or find your dream projects</p>
+
+                    <div className="cta-buttons">
+                        <a href="/login" className="cta-button primary">
+                            Login
+                        </a>
+                        <a href="/signup" className="cta-button secondary">
+                            Sign Up
+                        </a>
+                    </div>
+                </div>
+                <div className="hero-image">
+                    <img src="/src/images/peoplecollaborating.jpg" alt="People collaborating" />
+                </div>
+            </header>
+
+            <section className="features-section">
+                <h2>Why Choose SkillSphere?</h2>
+                <div className="features-grid">
+                    <div className="feature-card">
+                        <div className="feature-icon">💼</div>
+                        <h3>Find Projects</h3>
+                        <p>Browse thousands of projects matching your skills and expertise</p>
+                    </div>
+                    <div className="feature-card">
+                        <div className="feature-icon">👥</div>
+                        <h3>Hire Talent</h3>
+                        <p>Connect with skilled professionals for your business needs</p>
+                    </div>
+                    <div className="feature-card">
+                        <div className="feature-icon">📈</div>
+                        <h3>Grow Your Career</h3>
+                        <p>Build your portfolio and showcase your work to potential clients</p>
+                    </div>
+                </div>
+            </section>
+            <section className="testimonial-section">
+                <h2>What Our Users Say</h2>
+                <div className="testimonial-card">
+                    <p>"Chhut Kaise Raha hai??! Mai gussa ho jaaunga daant dunga zor se!"</p>
+                    <div className="testimonial-author">
+                        <img src="src/images/elecpendi.png" alt="Sarah J." className="author-avatar" />
+                        <span>Alakh Panty, PW Founder</span>
+                    </div>
+                </div>
+            </section>
+            <footer className="home-footer">
+                <p>© {new Date().getFullYear()} SkillSphere. All rights reserved.</p>
+            </footer>
         </div>
     );
 };

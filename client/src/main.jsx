@@ -1,9 +1,9 @@
 import React from 'react';
 import ReactDOM from 'react-dom/client';
 import App from './App.jsx';
-import './index.css';
-import './ProposalsList.css';
-import './MyProposals.css';
+import './styles/index.css';
+import './styles/ProposalsList.css';
+import './styles/MyProposals.css';
 
 
 ReactDOM.createRoot(document.getElementById('root')).render(

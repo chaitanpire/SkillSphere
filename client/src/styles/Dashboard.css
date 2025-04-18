@@ -1,0 +1,157 @@
+/* Dashboard.css */
+.dashboard-container {
+    max-width: 1200px;
+    margin: 2rem auto;
+    padding: 2rem;
+    background: white;
+    border-radius: 16px;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.05);
+  }
+  
+  .dashboard-header {
+    margin-bottom: 3rem;
+    padding-bottom: 1.5rem;
+    border-bottom: 1px solid #e2e8f0;
+  }
+  
+  .dashboard-header h2 {
+    font-size: 2.5rem;
+    font-weight: 700;
+    margin-bottom: 1rem;
+    color: #1a1a2e;
+  }
+  
+  .highlight {
+    color: #4361ee;
+  }
+  
+  .user-info {
+    display: flex;
+    gap: 2rem;
+    color: #64748b;
+  }
+  
+  .user-info p {
+    margin: 0;
+  }
+  
+  .profile-section {
+    margin-bottom: 3rem;
+    padding: 2rem;
+    background: #f8f9fa;
+    border-radius: 12px;
+  }
+  
+  .profile-section h3 {
+    font-size: 1.8rem;
+    margin-bottom: 1.5rem;
+    color: #1a1a2e;
+  }
+  
+  .profile-details {
+    margin-bottom: 1.5rem;
+  }
+  
+  .profile-details p {
+    margin-bottom: 0.8rem;
+    color: #334155;
+  }
+  
+  .profile-details strong {
+    color: #1e293b;
+  }
+  
+  .profile-empty {
+    text-align: center;
+    padding: 1.5rem;
+    background: rgba(67, 97, 238, 0.05);
+    border-radius: 8px;
+    border: 1px dashed rgba(67, 97, 238, 0.3);
+  }
+  
+  .edit-link {
+    display: inline-block;
+    padding: 0.8rem 1.5rem;
+    background: #4361ee;
+    color: white;
+    text-decoration: none;
+    border-radius: 8px;
+    font-weight: 500;
+    transition: all 0.3s ease;
+  }
+  
+  .edit-link:hover {
+    background: #3a56d4;
+    transform: translateY(-2px);
+    box-shadow: 0 5px 15px rgba(67, 97, 238, 0.2);
+  }
+  
+  .client-actions,
+  .freelancer-actions {
+    display: flex;
+    gap: 1.5rem;
+    margin-top: 2rem;
+  }
+  
+  .primary-button,
+  .secondary-button {
+    padding: 1rem 2rem;
+    border-radius: 8px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    font-size: 1rem;
+    border: none;
+  }
+  
+  .primary-button {
+    background: #4361ee;
+    color: white;
+    box-shadow: 0 4px 14px rgba(67, 97, 238, 0.25);
+  }
+  
+  .primary-button:hover {
+    background: #3a56d4;
+    transform: translateY(-3px);
+    box-shadow: 0 6px 20px rgba(67, 97, 238, 0.35);
+  }
+  
+  .secondary-button {
+    background: white;
+    color: #4361ee;
+    border: 2px solid #4361ee;
+  }
+  
+  .secondary-button:hover {
+    background: rgba(67, 97, 238, 0.05);
+    transform: translateY(-3px);
+  }
+  
+  /* Responsive Design */
+  @media (max-width: 768px) {
+    .dashboard-container {
+      padding: 1.5rem;
+      margin: 1rem;
+    }
+  
+    .dashboard-header h2 {
+      font-size: 2rem;
+    }
+  
+    .user-info {
+      flex-direction: column;
+      gap: 0.5rem;
+    }
+  
+    .client-actions,
+    .freelancer-actions {
+      flex-direction: column;
+      gap: 1rem;
+    }
+  
+    .primary-button,
+    .secondary-button {
+      width: 100%;
+      text-align: center;
+    }
+  }

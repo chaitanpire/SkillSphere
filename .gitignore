@@ -25,6 +25,8 @@ server/*
 !server/routes
 !server/routes/**
 !server/.env
+!server/middleware
+!server/middleware/**
 
 # Inside the client folder: ignore everything except src and public
 client/*

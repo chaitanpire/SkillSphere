@@ -134,3 +134,5 @@ CREATE TABLE analytics_events (
     timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 ALTER TABLE projects ADD COLUMN status VARCHAR(20) DEFAULT 'active';
+alter table profiles add created_at timestamp default current_timestamp;
+alter table profiles add updated_at timestamp default current_timestamp;

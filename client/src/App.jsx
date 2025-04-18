@@ -11,7 +11,6 @@ import ProfilePage from './pages/ProfilePage';
 import AvailableProjects from './pages/AvailableProjects';
 import EditProfile from './pages/EditProfile';
 import ProposalForm from './pages/ProposalForm';
-import ProposalsList from './pages/ProposalsList';
 import MyProposals from './pages/MyProposals';
 import ClientProjects from './pages/ClientProjects';
 import ProjectProposals from './pages/ProjectProposals';
@@ -34,9 +33,8 @@ function App() {
           <Route path="/post-project" element={<ProtectedRoute><PostProject /></ProtectedRoute>} />
           <Route path="/profile/:id" element={<ProtectedRoute><ProfilePage /></ProtectedRoute>} />
           <Route path="/projects" element={<ProtectedRoute><AvailableProjects /></ProtectedRoute>} />
-          <Route path="/edit-profile" element={<ProtectedRoute><EditProfile /></ProtectedRoute>} />
+          <Route path="/edit-profile/:id" element={<ProtectedRoute><EditProfile /></ProtectedRoute>} />
           <Route path="/projects/:id/propose" element={<ProposalForm />} />
-          {/* <Route path="/projects/:id/proposals" element={<ProposalsList />} /> */}
           <Route path="/my-proposals" element={<MyProposals />} />
           <Route path="/client-projects" element={<ClientProjects />} />
           <Route path="/projects/:id/proposals" element={<ProjectProposals />} />
