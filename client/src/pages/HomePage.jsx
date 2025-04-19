@@ -60,7 +60,7 @@ const HomePage = () => {
                     <p>"Chhut Kaise Raha hai??! Mai gussa ho jaaunga daant dunga zor se!"</p>
                     <div className="testimonial-author">
                         <img src="src/images/elecpendi.png" alt="Sarah J." className="author-avatar" />
-                        <span>Alakh Panty, PW Founder</span>
+                        <span>Alakh Panty Sir, PW Founder</span>
                     </div>
                 </div>
             </section>
