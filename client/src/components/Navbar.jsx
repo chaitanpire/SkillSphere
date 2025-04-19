@@ -52,6 +52,29 @@ export default function Navbar() {
                         </Link>
                     </>
                 )}
+
+                {user.role === 'client' && (
+                    <>
+                        <span className="divider">|</span>
+                        <Link
+                            to="/client-projects"
+                            className={`nav-link ${location.pathname === '/proposals' ? 'active-link' : ''}`}
+                        >
+                            My Projects
+                        </Link>
+                    </>
+                )}
+                {user.role === 'freelancer' && (
+                    <>
+                        <span className="divider">|</span>
+                        <Link
+                            to="/my-proposals"
+                            className={`nav-link ${location.pathname === '/my-proposals' ? 'active-link' : ''}`}
+                        >
+                            My Proposals
+                        </Link>
+                    </>
+                )}
             </div>
 
             <button

@@ -18,10 +18,15 @@ app.use(express.json());
 const authRoutes = require('./routes/auth');
 const projectRoutes = require('./routes/projects');
 const userRoutes = require('./routes/users');
+const dashboardRoutes = require('./routes/dashboard');
+const proposalRoutes = require('./routes/proposals');
 
 app.use('/api/auth', authRoutes);
 app.use('/api/projects', projectRoutes);
 app.use('/api/users', userRoutes);
+app.use('/api/dashboard', dashboardRoutes);
+app.use('/api/proposals', proposalRoutes);
+
 
 // Listen
 const PORT = process.env.PORT || 4000;

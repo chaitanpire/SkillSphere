@@ -45,7 +45,6 @@ export default function ClientProjects() {
 
     return (
         <div className="client-projects-container">
-            <h1>Your Projects</h1>
 
             {error && (
                 <div className="error">

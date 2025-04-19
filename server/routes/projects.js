@@ -173,27 +173,61 @@ router.get('/proposals/my', requireFreelancer, async (req, res) => {
     }
 });
 
-router.delete('/proposals/:proposalId', async (req, res) => {
+// Get proposals for a project
+// router.get('/:id/proposals', async (req, res) => {
+//     try {
+//       const { id } = req.params;
+//       const result = await pool.query(`
+//         SELECT 
+//           p.*, 
+//           u.name as freelancer_name
+//         FROM proposals p
+//         JOIN users u ON p.freelancer_id = u.id
+//         WHERE p.project_id = $1
+//         ORDER BY p.created_at DESC
+//       `, [id]);
+  
+//       res.json(result.rows);
+//     } catch (err) {
+//       console.error(err);
+//       res.status(500).json({ error: 'Failed to load proposals' });
+//     }
+//   });
+// Get proposals for a project with freelancer ratings
+router.get('/:id/proposals', async (req, res) => {
     try {
-        const token = req.headers.authorization?.split(' ')[1];
-        const decoded = jwt.verify(token, process.env.JWT_SECRET);
-        const proposalId = parseInt(req.params.proposalId);
-
-        // Verify proposal ownership
-        const proposal = await pool.query(
-            'SELECT * FROM proposals WHERE id = $1 AND freelancer_id = $2',
-            [proposalId, decoded.id]
-        );
-
-        if (proposal.rows.length === 0) {
-            return res.status(404).json({ error: 'Proposal not found or not yours' });
+        const { id } = req.params;
+        const { sort } = req.query;
+        console.log('Fetching proposals for project ID:', id);
+        let orderBy = '';
+        if (sort === 'price') {
+            orderBy = 'ORDER BY p.proposed_amount ASC';
+        } else {
+            orderBy = 'ORDER BY u.rating DESC';
         }
 
-        await pool.query('DELETE FROM proposals WHERE id = $1', [proposalId]);
-        res.status(204).end();
+        const result = await pool.query(`
+            SELECT 
+                p.*,
+                u.name as freelancer_name,
+                COALESCE(u.rating, 0) as freelancer_rating,
+                u.location as freelancer_location,
+                (
+                    SELECT string_agg(s.name, ',')
+                    FROM user_skills us
+                    JOIN skills s ON us.skill_id = s.id
+                    WHERE us.user_id = p.freelancer_id
+                ) as freelancer_skills
+            FROM proposals p
+            JOIN users u ON p.freelancer_id = u.id
+            WHERE p.project_id = $1 and p.status = 'pending'
+            ${orderBy}
+        `, [id]);
+
+        res.json(result.rows);
     } catch (err) {
-        console.error('Error withdrawing proposal:', err);
-        res.status(500).json({ error: 'Failed to withdraw proposal' });
+        console.error(err);
+        res.status(500).json({ error: 'Failed to load proposals' });
     }
 });
 router.get('/client', requireClient, async (req, res) => {
@@ -244,79 +278,79 @@ router.get('/:id', async (req, res) => {
 
 
 // PUT /api/proposals/:id/accept - Accept a proposal
-router.put('/proposals/:id/accept', requireClient, async (req, res) => {
-    try {
-        const proposalId = parseInt(req.params.id);
+// router.put('/proposals/:id/accept', requireClient, async (req, res) => {
+//     try {
+//         const proposalId = parseInt(req.params.id);
 
-        // 1. Verify the proposal exists and belongs to client's project
-        const proposal = await pool.query(`
-            SELECT p.* FROM proposals p
-            JOIN projects pr ON p.project_id = pr.id
-            WHERE p.id = $1 AND pr.client_id = $2
-        `, [proposalId, req.user.id]);
+//         // 1. Verify the proposal exists and belongs to client's project
+//         const proposal = await pool.query(`
+//             SELECT p.* FROM proposals p
+//             JOIN projects pr ON p.project_id = pr.id
+//             WHERE p.id = $1 AND pr.client_id = $2
+//         `, [proposalId, req.user.id]);
 
-        if (proposal.rows.length === 0) {
-            return res.status(404).json({ error: 'Proposal not found or unauthorized' });
-        }
+//         if (proposal.rows.length === 0) {
+//             return res.status(404).json({ error: 'Proposal not found or unauthorized' });
+//         }
 
-        // 2. Update proposal status and project status
-        await pool.query('BEGIN');
+//         // 2. Update proposal status and project status
+//         await pool.query('BEGIN');
 
-        // Accept the proposal
-        await pool.query(
-            'UPDATE proposals SET status = $1 WHERE id = $2',
-            ['accepted', proposalId]
-        );
+//         // Accept the proposal
+//         await pool.query(
+//             'UPDATE proposals SET status = $1 WHERE id = $2',
+//             ['accepted', proposalId]
+//         );
 
-        // Mark project as assigned
-        await pool.query(
-            'UPDATE projects SET status = $1 WHERE id = $2',
-            ['assigned', proposal.rows[0].project_id]
-        );
+//         // Mark project as assigned
+//         await pool.query(
+//             'UPDATE projects SET status = $1 WHERE id = $2',
+//             ['assigned', proposal.rows[0].project_id]
+//         );
 
-        // Reject all other proposals for this project
-        await pool.query(
-            'UPDATE proposals SET status = $1 WHERE project_id = $2 AND id != $3',
-            ['rejected', proposal.rows[0].project_id, proposalId]
-        );
+//         // Reject all other proposals for this project
+//         await pool.query(
+//             'UPDATE proposals SET status = $1 WHERE project_id = $2 AND id != $3',
+//             ['rejected', proposal.rows[0].project_id, proposalId]
+//         );
 
-        await pool.query('COMMIT');
+//         await pool.query('COMMIT');
 
-        res.json({ message: 'Proposal accepted successfully' });
-    } catch (err) {
-        await pool.query('ROLLBACK');
-        console.error('Error accepting proposal:', err);
-        res.status(500).json({ error: 'Failed to accept proposal' });
-    }
-});
+//         res.json({ message: 'Proposal accepted successfully' });
+//     } catch (err) {
+//         await pool.query('ROLLBACK');
+//         console.error('Error accepting proposal:', err);
+//         res.status(500).json({ error: 'Failed to accept proposal' });
+//     }
+// });
 
-// PUT /api/proposals/:id/reject - Reject a proposal
-router.put('/proposals/:id/reject', requireClient, async (req, res) => {
-    try {
-        const proposalId = parseInt(req.params.id);
+// // PUT /api/proposals/:id/reject - Reject a proposal
+// router.put('/proposals/:id/reject', requireClient, async (req, res) => {
+//     try {
+//         const proposalId = parseInt(req.params.id);
 
-        // Verify ownership
-        const proposal = await pool.query(`
-            SELECT p.* FROM proposals p
-            JOIN projects pr ON p.project_id = pr.id
-            WHERE p.id = $1 AND pr.client_id = $2
-        `, [proposalId, req.user.id]);
+//         // Verify ownership
+//         const proposal = await pool.query(`
+//             SELECT p.* FROM proposals p
+//             JOIN projects pr ON p.project_id = pr.id
+//             WHERE p.id = $1 AND pr.client_id = $2
+//         `, [proposalId, req.user.id]);
 
-        if (proposal.rows.length === 0) {
-            return res.status(404).json({ error: 'Proposal not found or unauthorized' });
-        }
+//         if (proposal.rows.length === 0) {
+//             return res.status(404).json({ error: 'Proposal not found or unauthorized' });
+//         }
 
-        await pool.query(
-            'UPDATE proposals SET status = $1 WHERE id = $2',
-            ['rejected', proposalId]
-        );
+//         await pool.query(
+//             'UPDATE proposals SET status = $1 WHERE id = $2',
+//             ['rejected', proposalId]
+//         );
 
-        res.json({ message: 'Proposal rejected successfully' });
-    } catch (err) {
-        console.error('Error rejecting proposal:', err);
-        res.status(500).json({ error: 'Failed to reject proposal' });
-    }
-});
+//         res.json({ message: 'Proposal rejected successfully' });
+//     } catch (err) {
+//         console.error('Error rejecting proposal:', err);
+//         res.status(500).json({ error: 'Failed to reject proposal' });
+//     }
+// });
 
 
 module.exports = router;

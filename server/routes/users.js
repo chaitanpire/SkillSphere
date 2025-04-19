@@ -3,31 +3,61 @@ const pool = require('../config/db');
 const router = express.Router();
 
 // GET user + profile by ID
+// In your GET /:id route
+// Ensure your API always returns a profile object
+// users.js
 router.get('/:id', async (req, res) => {
-    const userId = req.params.id;
-
+    console.log('Fetching user ID:', req.params.id); // Debug log
+    
     try {
         const userResult = await pool.query(
             'SELECT id, name, email, role FROM users WHERE id = $1',
-            [userId]
+            [req.params.id]
         );
+
+        if (userResult.rows.length === 0) {
+            console.log('User not found'); // Debug log
+            return res.status(404).json({ error: 'User not found' });
+        }
 
         const profileResult = await pool.query(
-            'SELECT bio, location, hourly_rate, experience, rating, profile_picture FROM profiles WHERE user_id = $1',
-            [userId]
+            'SELECT bio, location, hourly_rate, experience, rating FROM profiles WHERE user_id = $1',
+            [req.params.id]
         );
 
-        if (userResult.rows.length === 0) return res.status(404).json({ error: 'User not found' });
-
-        res.json({
+        console.log('Profile query results:', profileResult.rows); // Debug log
+        
+        const response = {
             ...userResult.rows[0],
-            profile: profileResult.rows[0] || null
-        });
+            profile: profileResult.rows[0] || {
+                bio: null,
+                location: null,
+                hourly_rate: null,
+                experience: null,
+                rating: null
+            }
+        };
+
+        console.log('Final response:', response); // Debug log
+        res.json(response);
+        
     } catch (err) {
-        console.error(err);
+        console.error('Error in user route:', err);
         res.status(500).json({ error: 'Failed to load profile' });
     }
 });
+  
+  // Helper function
+  function createEmptyProfile() {
+    return {
+      bio: null,
+      location: null,
+      hourly_rate: null,
+      experience: null,
+      rating: null,
+      profile_picture: null
+    };
+  }
 
 router.put('/:id/profile', async (req, res) => {
     const userId = parseInt(req.params.id);

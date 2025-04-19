@@ -11,6 +11,7 @@ DROP TABLE IF EXISTS portfolios CASCADE;
 DROP TABLE IF EXISTS forum_posts CASCADE;
 DROP TABLE IF EXISTS forum_comments CASCADE;
 DROP TABLE IF EXISTS analytics_events CASCADE;
+DROP TABLE IF EXISTS transactions CASCADE;
 
 -- USERS
 CREATE TABLE users (
@@ -19,7 +20,8 @@ CREATE TABLE users (
     email VARCHAR(100) UNIQUE NOT NULL,
     password TEXT NOT NULL,
     role VARCHAR(20) CHECK (role IN ('client', 'freelancer')) NOT NULL,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at timestamp default current_timestamp
 );
 
 -- PROFILES
@@ -30,7 +32,9 @@ CREATE TABLE profiles (
     hourly_rate DECIMAL(10, 2),
     experience INTEGER,
     rating DECIMAL(3,2) DEFAULT 0.0,
-    profile_picture TEXT
+    profile_picture TEXT,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    created_at timestamp default current_timestamp
 );
 
 -- SKILLS
@@ -49,11 +53,15 @@ CREATE TABLE user_skills (
 CREATE TABLE projects (
     id SERIAL PRIMARY KEY,
     client_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
+    freelancer_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
     title VARCHAR(255) NOT NULL,
     description TEXT NOT NULL,
     budget DECIMAL(10,2),
     deadline DATE,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    status VARCHAR(20) CHECK (status IN ('open', 'in_progress', 'completed', 'cancelled')) DEFAULT 'open',
+    UNIQUE (title, client_id) -- Ensure a client cannot post two projects with the same title
 );
 
 -- PROPOSALS
@@ -64,7 +72,10 @@ CREATE TABLE proposals (
     cover_letter TEXT,
     proposed_amount DECIMAL(10,2),
     submitted_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    status VARCHAR(20) CHECK (status IN ('pending', 'accepted', 'rejected')) DEFAULT 'pending'
+    status VARCHAR(20) CHECK (status IN ('pending', 'accepted', 'rejected')) DEFAULT 'pending',
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE (project_id, freelancer_id) -- Ensure a freelancer cannot submit multiple proposals for the same project
+    
 );
 
 -- MESSAGES
@@ -73,7 +84,9 @@ CREATE TABLE messages (
     sender_id INTEGER REFERENCES users(id),
     receiver_id INTEGER REFERENCES users(id),
     content TEXT,
-    sent_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    sent_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    subject TEXT,
+    is_read BOOLEAN DEFAULT FALSE
 );
 
 -- NOTIFICATIONS
@@ -133,6 +146,12 @@ CREATE TABLE analytics_events (
     event_data JSONB,
     timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
-ALTER TABLE projects ADD COLUMN status VARCHAR(20) DEFAULT 'active';
-alter table profiles add created_at timestamp default current_timestamp;
-alter table profiles add updated_at timestamp default current_timestamp;
+-- TRANSACTIONS
+CREATE TABLE transactions (
+    id SERIAL PRIMARY KEY,
+    project_id INTEGER REFERENCES projects(id),
+    freelancer_id INTEGER REFERENCES users(id),
+    amount DECIMAL(10,2) NOT NULL,
+    transaction_date TIMESTAMP DEFAULT NOW(),
+    status VARCHAR(50) DEFAULT 'completed'
+);

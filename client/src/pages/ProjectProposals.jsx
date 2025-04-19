@@ -11,6 +11,9 @@ export default function ProjectProposals() {
     const [project, setProject] = useState(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
+    const [sortBy, setSortBy] = useState('rating');
+    const [rejectReason, setRejectReason] = useState('');
+    const [showRejectModal, setShowRejectModal] = useState(null);
 
     useEffect(() => {
         if (!user || user.role !== 'client') {
@@ -20,6 +23,9 @@ export default function ProjectProposals() {
 
         const fetchData = async () => {
             try {
+                setLoading(true);
+                setError(null);
+
                 const token = localStorage.getItem('token');
 
                 // Fetch project details
@@ -27,20 +33,34 @@ export default function ProjectProposals() {
                     headers: { 'Authorization': `Bearer ${token}` }
                 });
 
-                // Fetch proposals
-                const proposalsRes = await fetch(`http://localhost:4000/api/projects/${projectId}/proposals`, {
-                    headers: { 'Authorization': `Bearer ${token}` }
-                });
-
-                if (!projectRes.ok || !proposalsRes.ok) {
-                    throw new Error('Failed to load data');
-                }
+                if (!projectRes.ok) throw new Error('Failed to load project');
 
                 const projectData = await projectRes.json();
+
+                // Verify current user is the project owner
+                if (projectData.client_id !== user.id) {
+                    navigate('/dashboard');
+                    return;
+                }
+
+                // Fetch proposals with freelancer ratings
+                const proposalsRes = await fetch(
+                    `http://localhost:4000/api/projects/${projectId}/proposals?sort=${sortBy}`,
+                    { headers: { 'Authorization': `Bearer ${token}` } }
+                );
+
+                if (!proposalsRes.ok) throw new Error('Failed to load proposals');
+
                 const proposalsData = await proposalsRes.json();
 
+                // Ensure all proposals have a rating with default value if undefined
+                const processedProposals = proposalsData.map(proposal => ({
+                    ...proposal,
+                    freelancer_rating: proposal.freelancer_rating || 0
+                }));
+
                 setProject(projectData);
-                setProposals(proposalsData);
+                setProposals(processedProposals);
             } catch (err) {
                 setError(err.message);
             } finally {
@@ -49,7 +69,7 @@ export default function ProjectProposals() {
         };
 
         fetchData();
-    }, [projectId, user, navigate]);
+    }, [projectId, user, navigate, sortBy]);
 
     const handleAccept = async (proposalId) => {
         try {
@@ -66,14 +86,16 @@ export default function ProjectProposals() {
                 throw new Error('Failed to accept proposal');
             }
 
+            const data = await response.json();
+
             // Update local state
             setProposals(proposals.map(p => {
                 if (p.id === proposalId) return { ...p, status: 'accepted' };
-                if (p.project_id === projectId) return { ...p, status: 'rejected' };
+                if (p.status === 'pending') return { ...p, status: 'rejected' };
                 return p;
             }));
 
-            setProject({ ...project, status: 'assigned' });
+            setProject(prev => ({ ...prev, status: 'in_progress', freelancer_id: data.proposal.freelancer_id }));
 
         } catch (err) {
             setError(err.message);
@@ -88,7 +110,8 @@ export default function ProjectProposals() {
                 headers: {
                     'Authorization': `Bearer ${token}`,
                     'Content-Type': 'application/json'
-                }
+                },
+                body: JSON.stringify({ reason: rejectReason })
             });
 
             if (!response.ok) {
@@ -99,21 +122,33 @@ export default function ProjectProposals() {
                 p.id === proposalId ? { ...p, status: 'rejected' } : p
             ));
 
+            setShowRejectModal(null);
+            setRejectReason('');
         } catch (err) {
             setError(err.message);
         }
     };
 
-    if (loading) return <div className="loading">Loading proposals...</div>;
+    const sortedProposals = [...proposals].sort((a, b) => {
+        if (sortBy === 'rating') return b.freelancer_rating - a.freelancer_rating;
+        return a.proposed_amount - b.proposed_amount;
+    });
 
+    if (loading) return <div className="loading">Loading proposals...</div>;
     return (
         <div className="project-proposals-container">
             <button onClick={() => navigate(-1)} className="back-button">
                 ← Back to Projects
             </button>
 
-            <h1>Proposals for: {project?.title}</h1>
-            <p className="project-description">{project?.description}</p>
+            <div className="project-header">
+                <h1>Proposals for: {project?.title}</h1>
+                <p className="project-description">{project?.description}</p>
+                <div className="project-meta">
+                    <span>Budget: ₹{project?.budget}</span>
+                    <span>Status: {project?.status}</span>
+                </div>
+            </div>
 
             {error && (
                 <div className="error-alert">
@@ -122,31 +157,67 @@ export default function ProjectProposals() {
                 </div>
             )}
 
+            <div className="sort-controls">
+                <label>Sort by:</label>
+                <select value={sortBy} onChange={(e) => setSortBy(e.target.value)}>
+                    <option value="rating">Highest Rating</option>
+                    <option value="price">Lowest Price</option>
+                </select>
+            </div>
+
             {proposals.length === 0 ? (
                 <div className="empty-state">
                     <p>No proposals yet for this project</p>
                 </div>
             ) : (
                 <div className="proposals-list">
-                    {proposals.map(proposal => (
+                    {sortedProposals.map(proposal => (
                         <div key={proposal.id} className={`proposal-card ${proposal.status}`}>
                             <div className="proposal-header">
-                                <h3>From: {proposal.freelancer_name}</h3>
-                                <span className="status-badge">
+                                <div className="freelancer-info">
+                                    <h3>{proposal.freelancer_name}</h3>
+                                    <div className="rating">
+                                        {Array.from({ length: 5 }).map((_, i) => (
+                                            <span key={i} className={i < Math.floor(proposal.freelancer_rating || 0) ? 'filled' : ''}>
+                                                ★
+                                            </span>
+                                        ))}
+                                        <span>({(proposal.freelancer_rating || 0).toFixed(1)})</span>
+                                    </div>
+                                    <p className="freelancer-location">
+                                        {proposal.freelancer_location || 'Location not specified'}
+                                    </p>
+                                </div>
+                                <span className={`status-badge ${proposal.status}`}>
                                     {proposal.status || 'pending'}
                                 </span>
                             </div>
 
                             <div className="proposal-details">
-                                <p><strong>Amount:</strong> ₹{proposal.proposed_amount}</p>
-                                <p><strong>Submitted:</strong> {new Date(proposal.submitted_at).toLocaleString()}</p>
+                                <div className="proposal-meta">
+                                    <p><strong>Amount:</strong> ₹{proposal.proposed_amount}</p>
+                                    <p><strong>Delivery Time:</strong> {proposal.estimated_days} days</p>
+                                    <p><strong>Submitted:</strong> {new Date(proposal.submitted_at).toLocaleString()}</p>
+                                </div>
+
                                 <div className="cover-letter">
-                                    <p><strong>Cover Letter:</strong></p>
+                                    <h4>Cover Letter:</h4>
                                     <p>{proposal.cover_letter}</p>
                                 </div>
+
+                                {proposal.freelancer_skills && (
+                                    <div className="skills">
+                                        <h4>Skills:</h4>
+                                        <div className="skill-tags">
+                                            {proposal.freelancer_skills.split(',').map(skill => (
+                                                <span key={skill} className="skill-tag">{skill.trim()}</span>
+                                            ))}
+                                        </div>
+                                    </div>
+                                )}
                             </div>
 
-                            {project.status !== 'assigned' && proposal.status === 'pending' && (
+                            {project?.status === 'open' && proposal.status === 'pending' && (
                                 <div className="actions">
                                     <button
                                         onClick={() => handleAccept(proposal.id)}
@@ -155,7 +226,7 @@ export default function ProjectProposals() {
                                         Accept Proposal
                                     </button>
                                     <button
-                                        onClick={() => handleReject(proposal.id)}
+                                        onClick={() => setShowRejectModal(proposal.id)}
                                         className="reject-button"
                                     >
                                         Reject
@@ -164,6 +235,43 @@ export default function ProjectProposals() {
                             )}
                         </div>
                     ))}
+                </div>
+            )}
+
+            {/* Reject Proposal Modal */}
+            {showRejectModal && (
+                <div className="modal-overlay">
+                    <div className="modal-content">
+                        <h3>Reject Proposal</h3>
+                        <p>Are you sure you want to reject this proposal?</p>
+
+                        <div className="form-group">
+                            <label>Reason (optional):</label>
+                            <textarea
+                                value={rejectReason}
+                                onChange={(e) => setRejectReason(e.target.value)}
+                                placeholder="Provide feedback to the freelancer..."
+                            />
+                        </div>
+
+                        <div className="modal-actions">
+                            <button
+                                onClick={() => {
+                                    setShowRejectModal(null);
+                                    setRejectReason('');
+                                }}
+                                className="cancel-button"
+                            >
+                                Cancel
+                            </button>
+                            <button
+                                onClick={() => handleReject(showRejectModal)}
+                                className="confirm-reject-button"
+                            >
+                                Confirm Rejection
+                            </button>
+                        </div>
+                    </div>
                 </div>
             )}
         </div>

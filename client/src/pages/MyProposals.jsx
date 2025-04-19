@@ -72,7 +72,6 @@ export default function MyProposals() {
 
   return (
     <div className="my-proposals-container">
-      <h1>Your Proposals</h1>
 
       {error && (
         <div className="error-alert">
