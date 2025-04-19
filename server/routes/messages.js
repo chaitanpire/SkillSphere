@@ -1,23 +1,52 @@
 const express = require('express');
 const pool = require('../config/db');
 const router = express.Router();
+const jwt = require('jsonwebtoken');
 
+// Authentication middleware
+function authenticateToken(req, res, next) {
+    const authHeader = req.headers['authorization'];
+    const token = authHeader && authHeader.split(' ')[1];
+
+    if (!token) return res.sendStatus(401);
+
+    jwt.verify(token, process.env.JWT_SECRET, (err, user) => {
+        if (err) return res.sendStatus(403);
+        req.user = user;
+        next();
+    });
+}
+
+// Apply middleware to all message routes
+router.use(authenticateToken);
+
+// Get all conversations
 // Get all conversations
 router.get('/conversations', async (req, res) => {
     try {
+        console.log('Fetching conversations for user ID:', req.user.id);
         const result = await pool.query(`
-      SELECT DISTINCT ON (least(sender_id, receiver_id), greatest(sender_id, receiver_id))
-        CASE WHEN sender_id = $1 THEN receiver_id ELSE sender_id END as other_user_id,
-        u.name as other_user_name,
-        m.content as last_message,
-        m.sent_at as last_message_time,
-        SUM(CASE WHEN m.receiver_id = $1 AND m.is_read = false THEN 1 ELSE 0 END) as unread_count
-      FROM messages m
-      JOIN users u ON (CASE WHEN m.sender_id = $1 THEN m.receiver_id ELSE m.sender_id END) = u.id
-      WHERE sender_id = $1 OR receiver_id = $1
-      GROUP BY other_user_id, other_user_name, last_message, last_message_time
-      ORDER BY last_message_time DESC
-    `, [req.user.id]);
+            SELECT DISTINCT ON (least(sender_id, receiver_id), greatest(sender_id, receiver_id))
+                CASE WHEN sender_id = $1 THEN receiver_id ELSE sender_id END as other_user_id,
+                u.name as other_user_name,
+                m.content as last_message,
+                m.sent_at as last_message_time,
+                SUM(CASE WHEN m.receiver_id = $1 AND m.is_read = false THEN 1 ELSE 0 END) as unread_count
+            FROM messages m
+            JOIN users u ON (CASE WHEN m.sender_id = $1 THEN m.receiver_id ELSE m.sender_id END) = u.id
+            WHERE sender_id = $1 OR receiver_id = $1
+            GROUP BY 
+                least(sender_id, receiver_id), 
+                greatest(sender_id, receiver_id),
+                other_user_id,
+                other_user_name,
+                last_message,
+                last_message_time
+            ORDER BY 
+                least(sender_id, receiver_id), 
+                greatest(sender_id, receiver_id),
+                last_message_time DESC
+        `, [req.user.id]);
 
         res.json(result.rows);
     } catch (err) {
@@ -30,12 +59,12 @@ router.get('/conversations', async (req, res) => {
 router.get('/:otherUserId', async (req, res) => {
     try {
         const result = await pool.query(`
-      SELECT m.*, u.name as sender_name
-      FROM messages m
-      JOIN users u ON m.sender_id = u.id
-      WHERE (sender_id = $1 AND receiver_id = $2) OR (sender_id = $2 AND receiver_id = $1)
-      ORDER BY sent_at ASC
-    `, [req.user.id, req.params.otherUserId]);
+            SELECT m.*, u.name as sender_name
+            FROM messages m
+            JOIN users u ON m.sender_id = u.id
+            WHERE (sender_id = $1 AND receiver_id = $2) OR (sender_id = $2 AND receiver_id = $1)
+            ORDER BY sent_at ASC
+        `, [req.user.id, req.params.otherUserId]);
 
         res.json(result.rows);
     } catch (err) {

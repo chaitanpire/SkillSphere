@@ -4,12 +4,11 @@ const router = express.Router();
 
 // Get dashboard stats
 router.get('/stats/:userId', async (req, res) => {
-    try {
-        const { userId } = req.params;
-        const { rows: user } = await pool.query('SELECT role FROM users WHERE id = $1', [userId]);
-        console.log( user ); // Debug log
-        if (user[0].role === 'client') {
-            const stats = await pool.query(`
+  try {
+    const { userId } = req.params;
+    const { rows: user } = await pool.query('SELECT role FROM users WHERE id = $1', [userId]);
+    if (user[0].role === 'client') {
+      const stats = await pool.query(`
         SELECT 
           coalesce(COUNT(*) FILTER (WHERE status = 'open') , 0) AS open_projects,
           COUNT(*) FILTER (WHERE status = 'in_progress') AS pending_projects,
@@ -18,15 +17,15 @@ router.get('/stats/:userId', async (req, res) => {
         WHERE client_id = $1
       `, [userId]);
 
-            res.json({
+      res.json({
 
-                your_projects: stats.rows[0].open_projects,
-                pending: stats.rows[0].pending_projects,
-                completed: stats.rows[0].completed_projects
-            });
+        your_projects: stats.rows[0].open_projects,
+        pending: stats.rows[0].pending_projects,
+        completed: stats.rows[0].completed_projects
+      });
 
-        } else { // Freelancer
-            const stats = await pool.query(`
+    } else { // Freelancer
+      const stats = await pool.query(`
         SELECT 
           COUNT(*) AS available_projects,
           COUNT(*) FILTER (WHERE p.status = 'open') AS new_this_week,
@@ -38,32 +37,32 @@ router.get('/stats/:userId', async (req, res) => {
         LEFT JOIN transactions t ON t.freelancer_id = $1
         WHERE p.status = 'open' OR pr.freelancer_id = $1
       `, [userId]);
-            const stats2 = await pool.query(`
+      const stats2 = await pool.query(`
         SELECT
             COUNT(*) AS available_projects
             FROM projects
             `);
 
-            res.json({
-                available_projects: stats2.rows[0].available_projects,
-                earnings: stats.rows[0].earnings,
-                pending: stats.rows[0].pending_proposals,
-                completed: stats.rows[0].completed_projects
-            });
-        }
-    } catch (err) {
-        console.error(err);
-        res.status(500).json({ error: 'Failed to load dashboard stats' });
+      res.json({
+        available_projects: stats2.rows[0].available_projects,
+        earnings: stats.rows[0].earnings,
+        pending: stats.rows[0].pending_proposals,
+        completed: stats.rows[0].completed_projects
+      });
     }
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Failed to load dashboard stats' });
+  }
 });
 
 // Get recent activity
 router.get('/activity/:userId', async (req, res) => {
-    try {
-        const { userId } = req.params;
-        const { rows: user } = await pool.query('SELECT role FROM users WHERE id = $1', [userId]);
-        if (user[0].role === 'client') {
-            const activity = await pool.query(`
+  try {
+    const { userId } = req.params;
+    const { rows: user } = await pool.query('SELECT role FROM users WHERE id = $1', [userId]);
+    if (user[0].role === 'client') {
+      const activity = await pool.query(`
         SELECT 
           'proposal' AS type,
           p.title,
@@ -92,9 +91,9 @@ router.get('/activity/:userId', async (req, res) => {
         LIMIT 5
       `, [userId]);
 
-            res.json(activity.rows);
-        } else { // Freelancer
-            const activity = await pool.query(`
+      res.json(activity.rows);
+    } else { // Freelancer
+      const activity = await pool.query(`
         SELECT 
           'proposal' AS type,
           p.title,
@@ -115,12 +114,12 @@ router.get('/activity/:userId', async (req, res) => {
         LIMIT 5
       `, [userId]);
 
-            res.json(activity.rows);
-        }
-    } catch (err) {
-        console.error(err);
-        res.status(500).json({ error: 'Failed to load activity' });
+      res.json(activity.rows);
     }
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Failed to load activity' });
+  }
 });
 
 module.exports = router;

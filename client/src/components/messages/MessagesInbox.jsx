@@ -10,12 +10,24 @@ export default function MessagesInbox() {
 
   useEffect(() => {
     const fetchConversations = async () => {
-      const token = localStorage.getItem('token');
-      const response = await fetch('http://localhost:4000/api/messages/conversations', {
-        headers: { 'Authorization': `Bearer ${token}` }
-      });
-      const data = await response.json();
-      setConversations(data);
+      try {
+        const token = localStorage.getItem('token');
+        if (!token) throw new Error('No token found');
+
+        const response = await fetch('http://localhost:4000/api/messages/conversations', {
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          }
+        });
+
+        if (!response.ok) throw new Error('Failed to fetch conversations');
+        const data = await response.json();
+        setConversations(data);
+      } catch (err) {
+        console.error('Error fetching conversations:', err);
+        // Handle error (e.g., redirect to login)
+      }
     };
 
     if (user) {

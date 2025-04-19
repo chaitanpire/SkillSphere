@@ -21,7 +21,7 @@ router.post('/signup', async (req, res) => {
     }
 });
 
-// LOGIN
+// In your auth.js routes file
 router.post('/login', async (req, res) => {
     const { email, password } = req.body;
     try {
@@ -32,9 +32,13 @@ router.post('/login', async (req, res) => {
             return res.status(401).json({ error: 'Invalid email or password' });
         }
 
-
         const token = jwt.sign(
-            { id: user.id, email: user.email, role: user.role },
+            {
+                id: user.id,
+                email: user.email,
+                role: user.role,
+                name: user.name  // Include name if needed
+            },
             process.env.JWT_SECRET,
             { expiresIn: '2h' }
         );
@@ -44,8 +48,8 @@ router.post('/login', async (req, res) => {
             user: {
                 id: user.id,
                 name: user.name,
-                email: user.email, // ✅ this was missing!
-                role: user.role,
+                email: user.email,
+                role: user.role
             }
         });
     } catch (err) {

@@ -6,41 +6,8 @@ import '../styles/index.css';
 
 export default function Navbar() {
     const { user, logout } = useAuth();
-    const socket = useSocket();
     const location = useLocation();
     const [unreadCount, setUnreadCount] = useState(0);
-
-    useEffect(() => {
-        if (!user) return;
-
-        const fetchUnreadCount = async () => {
-            try {
-                const token = localStorage.getItem('token');
-                const response = await fetch('http://localhost:4000/api/messages/unread-count', {
-                    headers: { 'Authorization': `Bearer ${token}` }
-                });
-
-                if (response.ok) {
-                    const data = await response.json();
-                    setUnreadCount(data.count);
-                }
-            } catch (err) {
-                console.error('Error fetching unread count:', err);
-            }
-        };
-
-        fetchUnreadCount();
-
-        if (socket) {
-            socket.on('update_unread_count', fetchUnreadCount);
-        }
-
-        return () => {
-            if (socket) {
-                socket.off('update_unread_count');
-            }
-        };
-    }, [user, socket]);
 
     if (!user) {
         return null;
@@ -117,14 +84,12 @@ export default function Navbar() {
                     className={`nav-link ${location.pathname.startsWith('/messages') ? 'active-link' : ''}`}
                 >
                     Messages
-                    {unreadCount > 0 && <span className="unread-count">{unreadCount}</span>}
                 </Link>
             </div>
 
             <button
                 className="logout-btn"
                 onClick={() => {
-                    if (socket) socket.disconnect();
                     logout();
                     window.location.href = '/';
                 }}
