@@ -1,3 +1,4 @@
+// SocketContext.jsx
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import io from 'socket.io-client';
 import { useAuth } from './AuthContext';
@@ -18,7 +19,14 @@ export function SocketProvider({ children }) {
       }
     });
 
-    setSocket(newSocket);
+    newSocket.on('connect', () => {
+      console.log('🔌 Socket connected:', newSocket.id);
+      setSocket(newSocket);
+    });
+
+    newSocket.on('disconnect', () => {
+      console.log('❌ Socket disconnected');
+    });
 
     return () => {
       newSocket.disconnect();

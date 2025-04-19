@@ -52,7 +52,7 @@ export default function ProjectProposals() {
                 if (!proposalsRes.ok) throw new Error('Failed to load proposals');
 
                 const proposalsData = await proposalsRes.json();
-
+                console.log('Proposals:', proposalsData);
                 // Ensure all proposals have a rating with default value if undefined
                 const processedProposals = proposalsData.map(proposal => ({
                     ...proposal,
@@ -128,6 +128,27 @@ export default function ProjectProposals() {
             setError(err.message);
         }
     };
+    const handleMarkComplete = async () => {
+        try {
+            const token = localStorage.getItem('token');
+            const response = await fetch(`http://localhost:4000/api/projects/${projectId}/complete`, {
+                method: 'PUT',
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json'
+                }
+            });
+
+            if (!response.ok) throw new Error('Failed to mark project as complete');
+
+            setProject(prev => ({ ...prev, status: 'completed' }));
+            // navigate to transactions page or show success message
+            alert('Project marked as complete. Please proceed to the transactions page.');
+            navigate('/transactions');
+        } catch (err) {
+            setError(err.message);
+        }
+    };
 
     const sortedProposals = [...proposals].sort((a, b) => {
         if (sortBy === 'rating') return b.freelancer_rating - a.freelancer_rating;
@@ -138,7 +159,7 @@ export default function ProjectProposals() {
     return (
         <div className="project-proposals-container">
             <button onClick={() => navigate(-1)} className="back-button">
-                ← Back to Projects
+                ←
             </button>
 
             <div className="project-header">
@@ -182,7 +203,7 @@ export default function ProjectProposals() {
                                                 ★
                                             </span>
                                         ))}
-                                        <span>({(proposal.freelancer_rating || 0).toFixed(1)})</span>
+                                        <span>({(proposal.freelancer_rating || 0)})</span>
                                     </div>
                                     <p className="freelancer-location">
                                         {proposal.freelancer_location || 'Location not specified'}
@@ -199,6 +220,14 @@ export default function ProjectProposals() {
                                     <p><strong>Delivery Time:</strong> {proposal.estimated_days} days</p>
                                     <p><strong>Submitted:</strong> {new Date(proposal.submitted_at).toLocaleString()}</p>
                                 </div>
+                                {project?.status === 'in_progress' && (
+                                    <button
+                                        className="mark-complete-button"
+                                        onClick={handleMarkComplete}
+                                    >
+                                        Mark Project as Complete
+                                    </button>
+                                )}
 
                                 <div className="cover-letter">
                                     <h4>Cover Letter:</h4>

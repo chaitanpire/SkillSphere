@@ -155,3 +155,4 @@ CREATE TABLE transactions (
     transaction_date TIMESTAMP DEFAULT NOW(),
     status VARCHAR(50) DEFAULT 'completed'
 );
+alter table notifications add column link text;

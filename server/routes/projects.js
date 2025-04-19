@@ -148,6 +148,25 @@ router.get('/', async (req, res) => {
     }
 });
 
+router.get('/available', async (req, res) => {
+    try {
+        const result = await pool.query(`
+        SELECT projects.*, users.name AS client_name
+        FROM projects
+        JOIN users ON projects.client_id = users.id
+        WHERE projects.status = 'open' 
+        AND projects.id NOT IN (
+            SELECT project_id FROM proposals WHERE freelancer_id = $1
+        )
+        ORDER BY projects.created_at DESC
+      `);
+        res.json(result.rows);
+    } catch (err) {
+        console.error('Error fetching projects:', err);
+        res.status(500).json({ error: 'Failed to fetch projects' });
+    }
+});
+
 // GET /api/proposals/freelancer - Get all proposals by current freelancer
 router.get('/proposals/my', requireFreelancer, async (req, res) => {
     try {
@@ -186,7 +205,7 @@ router.get('/proposals/my', requireFreelancer, async (req, res) => {
 //         WHERE p.project_id = $1
 //         ORDER BY p.created_at DESC
 //       `, [id]);
-  
+
 //       res.json(result.rows);
 //     } catch (err) {
 //       console.error(err);
@@ -221,7 +240,7 @@ router.get('/:id/proposals', async (req, res) => {
             FROM proposals p
             JOIN users u ON p.freelancer_id = u.id
             JOIN profiles pr ON u.id = pr.user_id
-            WHERE p.project_id = $1 and p.status = 'pending'
+            WHERE p.project_id = $1
             ${orderBy}
         `, [id]);
 
@@ -275,6 +294,47 @@ router.get('/:id', async (req, res) => {
         res.status(500).json({ error: 'Failed to fetch project' });
     }
 });
+
+router.put('/:id/complete', requireClient, async (req, res) => {
+    const projectId = req.params.id;
+
+    try {
+        console.log('✅ Marking project complete:', projectId);
+
+        // Check if project exists and is in_progress
+        const result = await pool.query(
+            'SELECT status FROM projects WHERE id = $1',
+            [projectId]
+        );
+
+        if (result.rows.length === 0) {
+            return res.status(404).json({ error: 'Project not found' });
+        }
+
+        const status = result.rows[0].status;
+
+        if (status !== 'in_progress') {
+            return res.status(400).json({ error: 'Only in-progress projects can be completed' });
+        }
+
+        // Update the project status to completed
+        const updateResult = await pool.query(
+            'UPDATE projects SET status = $1 WHERE id = $2 RETURNING *',
+            ['completed', projectId]
+        );
+
+        return res.json({
+            ok: true,
+            success: true,
+            project: updateResult.rows[0]
+        });
+    } catch (err) {
+        console.error('Error completing project:', err);
+        return res.status(500).json({ error: 'Server error' });
+    }
+});
+
+
 // GET /api/projects/:id/proposals - Get proposals for a specific project
 
 

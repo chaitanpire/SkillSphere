@@ -1,3 +1,4 @@
+// MessageThread.jsx
 import React, { useEffect, useState, useRef, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
@@ -6,9 +7,10 @@ import './Messages.css';
 
 export default function MessageThread() {
   const { otherUserId } = useParams();
-  const { user } = useAuth();
+  const { user, loading } = useAuth();
   const socket = useSocket();
   const navigate = useNavigate();
+
   const [messages, setMessages] = useState([]);
   const [newMessage, setNewMessage] = useState('');
   const [otherUser, setOtherUser] = useState(null);
@@ -16,11 +18,11 @@ export default function MessageThread() {
   const messagesEndRef = useRef(null);
 
   const fetchData = useCallback(async () => {
+    if (!user) return;
     try {
       setIsLoading(true);
       const token = localStorage.getItem('token');
 
-      // Fetch messages and user data in parallel
       const [messagesRes, userRes] = await Promise.all([
         fetch(`http://localhost:4000/api/messages/${otherUserId}`, {
           headers: { 'Authorization': `Bearer ${token}` }
@@ -48,36 +50,43 @@ export default function MessageThread() {
     } finally {
       setIsLoading(false);
     }
-  }, [otherUserId, user.id, socket]);
+  }, [otherUserId, user, socket]);
+
+  // Join conversation and listen for messages
+  useEffect(() => {
+    if (!user || !socket || !otherUserId) return;
+
+    const conversationId = [user.id, otherUserId].sort().join('_');
+    console.log('Joining conversation room:', conversationId);
+    socket.emit('join_conversation', conversationId);
+
+    const handleNewMessage = (message) => {
+      console.log('📩 New message received:', message);
+      if (
+        (message.sender_id === otherUserId && message.receiver_id === user.id) ||
+        (message.sender_id === user.id && message.receiver_id === otherUserId)
+      ) {
+        setMessages(prev => [...prev, message]);
+
+        if (message.sender_id === user.id) {
+          socket.emit('mark_read', {
+            senderId: user.id,
+            receiverId: otherUserId
+          });
+        }
+      }
+    };
+
+    socket.on('new_message', handleNewMessage);
+
+    return () => {
+      socket.off('new_message', handleNewMessage);
+    };
+  }, [socket, user, otherUserId]);
 
   useEffect(() => {
     fetchData();
-
-    if (socket) {
-      const conversationId = [user.id, otherUserId].sort().join('_');
-      socket.emit('join_conversation', conversationId);
-
-      const handleNewMessage = (message) => {
-        if ((message.sender_id === otherUserId && message.receiver_id === user.id) ||
-          (message.sender_id === user.id && message.receiver_id === otherUserId)) {
-          setMessages(prev => [...prev, message]);
-
-          if (message.sender_id === user.id) {
-            socket.emit('mark_read', {
-              senderId: user.id,
-              receiverId: otherUserId
-            });
-          }
-        }
-      };
-
-      socket.on('new_message', handleNewMessage);
-
-      return () => {
-        socket.off('new_message', handleNewMessage);
-      };
-    }
-  }, [fetchData, user.id, otherUserId, socket]);
+  }, [fetchData]);
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -97,10 +106,9 @@ export default function MessageThread() {
 
     if (socket) {
       socket.emit('send_message', messageData);
-      // Optimistically update UI
       setMessages(prev => [...prev, {
         ...messageData,
-        id: Date.now(), // temporary ID
+        id: Date.now(),
         sent_at: new Date().toISOString()
       }]);
     }
@@ -108,7 +116,9 @@ export default function MessageThread() {
     setNewMessage('');
   };
 
+  if (loading) return <div className="loading">Authenticating...</div>;
   if (isLoading) return <div className="loading">Loading...</div>;
+  if (!user) return <div className="error">You must be logged in to view this page</div>;
   if (!otherUser) return <div className="error">User not found</div>;
 
   return (

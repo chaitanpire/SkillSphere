@@ -8,7 +8,7 @@ export default function FreelancerProjects() {
   useEffect(() => {
     const fetchProjects = async () => {
       try {
-        const response = await fetch('http://localhost:4000/api/projects');
+        const response = await fetch('http://localhost:4000/api/projects/available');
         if (!response.ok) {
           throw new Error('Failed to fetch projects');
         }
@@ -27,7 +27,7 @@ export default function FreelancerProjects() {
     <div className="projects-container">
       <h2>Available Projects</h2>
       {projects.length === 0 ? (
-        <p>Loading projects...</p>
+        <p>No projects available</p>
       ) : (
         <div className="projects-list">
           {projects.map(project => (

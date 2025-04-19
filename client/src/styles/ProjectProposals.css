@@ -250,4 +250,20 @@
     text-align: center;
     padding: 2rem;
     color: #666;
+
+}
+
+.mark-complete-button {
+    margin-top: 12px;
+    background-color: #28a745;
+    color: white;
+    border: none;
+    padding: 10px 18px;
+    font-weight: bold;
+    border-radius: 5px;
+    cursor: pointer;
+}
+
+.mark-complete-button:hover {
+    background-color: #218838;
 }

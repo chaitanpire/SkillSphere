@@ -66,6 +66,11 @@ export function AuthProvider({ children }) {
     verifyAuth();
   }, []);
 
+  const [user, setUser] = useState(() => {
+    const storedUser = localStorage.getItem('user');
+    return storedUser ? JSON.parse(storedUser) : null;
+  });
+  
   const login = (data) => {
     localStorage.setItem('token', data.token);
     setAuthState({
@@ -75,6 +80,8 @@ export function AuthProvider({ children }) {
     });
   };
 
+
+
   const logout = () => {
     localStorage.removeItem('token');
     setAuthState({
@@ -83,6 +90,8 @@ export function AuthProvider({ children }) {
       error: null
     });
   };
+
+  
 
   return (
     <AuthContext.Provider value={{
