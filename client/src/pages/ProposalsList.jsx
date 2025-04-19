@@ -52,13 +52,13 @@ export default function ProposalsList() {
             isMounted = false; // Cleanup function
         };
     }, [projectId, proposals]);
-
+    console.log('Proposals:', proposals);
     if (loading) return <p>Loading proposals...</p>;
     if (error) return <p>Error: {error}</p>;
 
     return (
         <div className="proposals-container">
-            <h2>Proposals for: {projectTitle}</h2>
+            <h2>Proposals for : {projectTitle}</h2>
             {proposals.length === 0 ? (
                 <p>No proposals yet for this project.</p>
             ) : (

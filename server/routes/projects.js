@@ -91,27 +91,27 @@ router.post('/:id/proposals', requireFreelancer, async (req, res) => {
     }
 });
 
-router.get('/:id/proposals', async (req, res) => {
-    const projectId = parseInt(req.params.id);
-    if (isNaN(projectId)) {
-        return res.status(400).json({ error: 'Invalid project ID' });
-    }
+// router.get('/:id/proposals', async (req, res) => {
+//     const projectId = parseInt(req.params.id);
+//     if (isNaN(projectId)) {
+//         return res.status(400).json({ error: 'Invalid project ID' });
+//     }
 
-    try {
-        const result = await pool.query(`
-            SELECT proposals.*, users.name AS freelancer_name
-            FROM proposals
-            JOIN users ON proposals.freelancer_id = users.id
-            WHERE project_id = $1
-            ORDER BY submitted_at DESC
-        `, [projectId]);
+//     try {
+//         const result = await pool.query(`
+//             SELECT proposals.*, users.name AS freelancer_name
+//             FROM proposals
+//             JOIN users ON proposals.freelancer_id = users.id
+//             WHERE project_id = $1
+//             ORDER BY submitted_at DESC
+//         `, [projectId]);
 
-        res.json(result.rows);
-    } catch (err) {
-        console.error('Error fetching proposals:', err);
-        res.status(500).json({ error: 'Failed to fetch proposals' });
-    }
-});
+//         res.json(result.rows);
+//     } catch (err) {
+//         console.error('Error fetching proposals:', err);
+//         res.status(500).json({ error: 'Failed to fetch proposals' });
+//     }
+// });
 // POST /api/projects
 router.post('/', requireClient, async (req, res) => {
     const { title, description, budget, deadline } = req.body;
@@ -203,15 +203,15 @@ router.get('/:id/proposals', async (req, res) => {
         if (sort === 'price') {
             orderBy = 'ORDER BY p.proposed_amount ASC';
         } else {
-            orderBy = 'ORDER BY u.rating DESC';
+            orderBy = 'ORDER BY pr.rating DESC';
         }
 
         const result = await pool.query(`
             SELECT 
                 p.*,
                 u.name as freelancer_name,
-                COALESCE(u.rating, 0) as freelancer_rating,
-                u.location as freelancer_location,
+                COALESCE(pr.rating, 0) as freelancer_rating,
+                pr.location as freelancer_location,
                 (
                     SELECT string_agg(s.name, ',')
                     FROM user_skills us
@@ -220,6 +220,7 @@ router.get('/:id/proposals', async (req, res) => {
                 ) as freelancer_skills
             FROM proposals p
             JOIN users u ON p.freelancer_id = u.id
+            JOIN profiles pr ON u.id = pr.user_id
             WHERE p.project_id = $1 and p.status = 'pending'
             ${orderBy}
         `, [id]);

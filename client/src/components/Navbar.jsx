@@ -1,13 +1,47 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import { useSocket } from '../context/SocketContext';
 import '../styles/index.css';
 
 export default function Navbar() {
     const { user, logout } = useAuth();
+    const socket = useSocket();
     const location = useLocation();
+    const [unreadCount, setUnreadCount] = useState(0);
 
-    // Don't render navbar if no user is logged in
+    useEffect(() => {
+        if (!user) return;
+
+        const fetchUnreadCount = async () => {
+            try {
+                const token = localStorage.getItem('token');
+                const response = await fetch('http://localhost:4000/api/messages/unread-count', {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+
+                if (response.ok) {
+                    const data = await response.json();
+                    setUnreadCount(data.count);
+                }
+            } catch (err) {
+                console.error('Error fetching unread count:', err);
+            }
+        };
+
+        fetchUnreadCount();
+
+        if (socket) {
+            socket.on('update_unread_count', fetchUnreadCount);
+        }
+
+        return () => {
+            if (socket) {
+                socket.off('update_unread_count');
+            }
+        };
+    }, [user, socket]);
+
     if (!user) {
         return null;
     }
@@ -58,12 +92,13 @@ export default function Navbar() {
                         <span className="divider">|</span>
                         <Link
                             to="/client-projects"
-                            className={`nav-link ${location.pathname === '/proposals' ? 'active-link' : ''}`}
+                            className={`nav-link ${location.pathname === '/client-projects' ? 'active-link' : ''}`}
                         >
                             My Projects
                         </Link>
                     </>
                 )}
+
                 {user.role === 'freelancer' && (
                     <>
                         <span className="divider">|</span>
@@ -75,11 +110,21 @@ export default function Navbar() {
                         </Link>
                     </>
                 )}
+
+                <span className="divider">|</span>
+                <Link
+                    to="/messages"
+                    className={`nav-link ${location.pathname.startsWith('/messages') ? 'active-link' : ''}`}
+                >
+                    Messages
+                    {unreadCount > 0 && <span className="unread-count">{unreadCount}</span>}
+                </Link>
             </div>
 
             <button
                 className="logout-btn"
                 onClick={() => {
+                    if (socket) socket.disconnect();
                     logout();
                     window.location.href = '/';
                 }}

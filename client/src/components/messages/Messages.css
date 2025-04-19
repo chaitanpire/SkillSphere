@@ -1,0 +1,99 @@
+.inbox-container {
+    max-width: 600px;
+    margin: 0 auto;
+    padding: 20px;
+  }
+  
+  .conversation-item {
+    padding: 15px;
+    border-bottom: 1px solid #eee;
+    position: relative;
+  }
+  
+  .conversation-item a {
+    text-decoration: none;
+    color: inherit;
+  }
+  
+  .conversation-item span {
+    position: absolute;
+    right: 15px;
+    top: 15px;
+    background: #4CAF50;
+    color: white;
+    border-radius: 50%;
+    width: 20px;
+    height: 20px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 12px;
+  }
+  
+  .message-thread {
+    max-width: 600px;
+    margin: 0 auto;
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+    height: 80vh;
+  }
+  
+  .messages-container {
+    flex: 1;
+    overflow-y: auto;
+    margin: 20px 0;
+    padding: 10px;
+    border: 1px solid #eee;
+    border-radius: 5px;
+  }
+  
+  .message {
+    margin: 10px 0;
+    padding: 10px;
+    border-radius: 5px;
+    max-width: 70%;
+  }
+  
+  .message.sent {
+    background: #DCF8C6;
+    margin-left: auto;
+  }
+  
+  .message.received {
+    background: #ECECEC;
+    margin-right: auto;
+  }
+  
+  .message p {
+    margin: 0;
+  }
+  
+  .message small {
+    display: block;
+    text-align: right;
+    font-size: 0.8em;
+    color: #666;
+    margin-top: 5px;
+  }
+  
+  .message-thread form {
+    display: flex;
+    gap: 10px;
+  }
+  
+  .message-thread input {
+    flex: 1;
+    padding: 10px;
+    border: 1px solid #ddd;
+    border-radius: 5px;
+  }
+  
+  .message-thread button {
+    padding: 10px 20px;
+    background: #4CAF50;
+    color: white;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+  }
