@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { useSocket } from '../../context/SocketContext';
 import { Link } from 'react-router-dom';
-
+import './Messages.css';
 export default function MessagesInbox() {
   const { user } = useAuth();
   const socket = useSocket();
@@ -20,23 +20,23 @@ export default function MessagesInbox() {
 
     if (user) {
       fetchConversations();
-      
+
       if (socket) {
         socket.emit('authenticate', localStorage.getItem('token'));
-        
+
         socket.on('new_message', (message) => {
           setConversations(prev => {
             const otherUserId = message.sender_id === user.id ? message.receiver_id : message.sender_id;
             const updated = prev.filter(c => c.other_user_id !== otherUserId);
-            
+
             return [{
               other_user_id: otherUserId,
-              other_user_name: message.sender_id === user.id ? 
-                prev.find(c => c.other_user_id === otherUserId)?.other_user_name || 'Unknown' : 
+              other_user_name: message.sender_id === user.id ?
+                prev.find(c => c.other_user_id === otherUserId)?.other_user_name || 'Unknown' :
                 message.sender_name,
               last_message: message.content,
               last_message_time: message.sent_at,
-              unread_count: message.receiver_id === user.id ? 
+              unread_count: message.receiver_id === user.id ?
                 (prev.find(c => c.other_user_id === otherUserId)?.unread_count || 0) + 1 : 0
             }, ...updated];
           });

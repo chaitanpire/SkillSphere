@@ -2,7 +2,7 @@ import React, { useEffect, useState, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { useSocket } from '../../context/SocketContext';
-
+import './Messages.css';
 export default function MessageThread() {
   const { otherUserId } = useParams();
   const { user } = useAuth();
