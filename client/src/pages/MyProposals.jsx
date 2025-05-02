@@ -18,7 +18,6 @@ export default function MyProposals() {
 
     const fetchProposals = async () => {
       try {
-        console.log('Fetching proposals for user:', user);
         const token = localStorage.getItem('token');
         const response = await fetch('http://localhost:4000/api/projects/proposals/my', {
           headers: {

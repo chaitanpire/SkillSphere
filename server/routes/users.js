@@ -1,14 +1,17 @@
 const express = require('express');
 const pool = require('../config/db');
 const router = express.Router();
+const authenticate = require('../middleware/authenticate');
+
+// Apply authentication to all message routes
+router.use(authenticate);
 
 // GET user + profile by ID
 // In your GET /:id route
 // Ensure your API always returns a profile object
 // users.js
 router.get('/:id', async (req, res) => {
-    console.log('Fetching user ID:', req.params.id); // Debug log
-    
+
     try {
         const userResult = await pool.query(
             'SELECT id, name, email, role FROM users WHERE id = $1',
@@ -25,8 +28,7 @@ router.get('/:id', async (req, res) => {
             [req.params.id]
         );
 
-        console.log('Profile query results:', profileResult.rows); // Debug log
-        
+
         const response = {
             ...userResult.rows[0],
             profile: profileResult.rows[0] || {
@@ -38,26 +40,25 @@ router.get('/:id', async (req, res) => {
             }
         };
 
-        console.log('Final response:', response); // Debug log
         res.json(response);
-        
+
     } catch (err) {
         console.error('Error in user route:', err);
         res.status(500).json({ error: 'Failed to load profile' });
     }
 });
-  
-  // Helper function
-  function createEmptyProfile() {
+
+// Helper function
+function createEmptyProfile() {
     return {
-      bio: null,
-      location: null,
-      hourly_rate: null,
-      experience: null,
-      rating: null,
-      profile_picture: null
+        bio: null,
+        location: null,
+        hourly_rate: null,
+        experience: null,
+        rating: null,
+        profile_picture: null
     };
-  }
+}
 
 router.put('/:id/profile', async (req, res) => {
     const userId = parseInt(req.params.id);
@@ -86,7 +87,7 @@ router.put('/:id/profile', async (req, res) => {
 
         // Get current profile to compare changes
         const currentProfile = await pool.query(
-            'SELECT * FROM profiles WHERE user_id = $1', 
+            'SELECT * FROM profiles WHERE user_id = $1',
             [userId]
         );
 
@@ -137,7 +138,7 @@ router.put('/:id/profile', async (req, res) => {
         }
     } catch (err) {
         console.error('Error updating profile:', err.message);
-        return res.status(500).json({ 
+        return res.status(500).json({
             error: 'Failed to update profile',
             details: process.env.NODE_ENV === 'development' ? err.message : undefined
         });

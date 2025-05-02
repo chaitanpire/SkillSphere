@@ -1,9 +1,14 @@
 const express = require('express');
 const pool = require('../config/db');
 const router = express.Router();
+const authenticate = require('../middleware/authenticate');
+const { requireRole } = require('../middleware/roles');
 
+router.use(authenticate);
+requireClient = requireRole('client');
+requireFreelancer = requireRole('freelancer');
 // Accept a proposal
-router.put('/:id/accept', async (req, res) => {
+router.put('/:id/accept',requireClient,  async (req, res) => {
   try {
     const { id, project_id } = req.params;
     
@@ -63,7 +68,7 @@ router.put('/:id/accept', async (req, res) => {
 });
 
 // Reject a proposal
-router.put('/:id/reject', async (req, res) => {
+router.put('/:id/reject',requireClient, async (req, res) => {
   try {
     const { id } = req.params;
     const { reason } = req.body;

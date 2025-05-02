@@ -12,7 +12,14 @@ export default function ProfilePage() {
     useEffect(() => {
         const fetchProfile = async () => {
             try {
-                const res = await fetch(`http://localhost:4000/api/users/${id}`);
+                const token = localStorage.getItem('token');
+                const res = await fetch(`http://localhost:4000/api/users/${id}`,
+                    {
+                        headers: {
+                            'Authorization': `Bearer ${token}`,
+                            'Content-Type': 'application/json'
+                        }
+                    });
                 if (!res.ok) throw new Error('Failed to fetch profile');
                 const data = await res.json();
                 setProfileUser(data);
@@ -22,7 +29,7 @@ export default function ProfilePage() {
                 setLoading(false);
             }
         };
-        
+
         fetchProfile();
     }, [id]);
 

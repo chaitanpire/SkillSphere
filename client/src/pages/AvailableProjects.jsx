@@ -6,9 +6,12 @@ export default function FreelancerProjects() {
   const navigate = useNavigate();
 
   useEffect(() => {
+    
     const fetchProjects = async () => {
       try {
-        const response = await fetch('http://localhost:4000/api/projects/available');
+        const response = await fetch('http://localhost:4000/api/projects/available',
+          {headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }} // Added token for authentication
+        );
         if (!response.ok) {
           throw new Error('Failed to fetch projects');
         }

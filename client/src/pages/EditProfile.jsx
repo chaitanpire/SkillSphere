@@ -42,7 +42,14 @@ export default function EditProfile() {
                 }
 
                 // Fetch profile data
-                const response = await fetch(`http://localhost:4000/api/users/${userId}`);
+                const response = await fetch(`http://localhost:4000/api/users/${userId}`, 
+                    {
+                        headers: {
+                        'Content-Type': 'application/json',
+                        Authorization: `Bearer ${localStorage.getItem('token')}`
+                        }
+                    }
+                );
                 if (!response.ok) throw new Error('Failed to fetch profile');
                 
                 const data = await response.json();

@@ -1,64 +1,12 @@
 const express = require('express');
-const jwt = require('jsonwebtoken');
 const pool = require('../config/db');
-require('dotenv').config();
-
 const router = express.Router();
+const authenticate = require('../middleware/authenticate');
+const { requireRole } = require('../middleware/roles');
 
-// Middleware: Require JWT + Client role
-function requireClient(req, res, next) {
-    const auth = req.headers.authorization;
-    if (!auth) return res.status(401).json({ error: 'No token provided' });
-
-    try {
-        const decoded = jwt.verify(auth.split(' ')[1], process.env.JWT_SECRET);
-        if (decoded.role !== 'client') {
-            return res.status(403).json({ error: 'Only clients can post projects' });
-        }
-        req.user = decoded; // attach user info
-        next();
-    } catch (err) {
-        res.status(401).json({ error: 'Invalid token' });
-    }
-}
-
-// Middleware: Require Freelancer role
-function requireFreelancer(req, res, next) {
-    const auth = req.headers.authorization;
-    if (!auth) return res.status(401).json({ error: 'No token provided' });
-
-    try {
-        const decoded = jwt.verify(auth.split(' ')[1], process.env.JWT_SECRET);
-        if (decoded.role !== 'freelancer') {
-            return res.status(403).json({ error: 'Only freelancers can submit proposals' });
-        }
-        req.user = decoded;
-        next();
-    } catch (err) {
-        res.status(401).json({ error: 'Invalid token' });
-    }
-}
-
-// GET /api/projects/:id/proposals - Get proposals for a specific project
-// router.get('/:id/proposals', async (req, res) => {
-//     const projectId = parseInt(req.params.id);
-
-//     try {
-//         const result = await pool.query(`
-//             SELECT proposals.*, users.name AS freelancer_name
-//             FROM proposals
-//             JOIN users ON proposals.freelancer_id = users.id
-//             WHERE project_id = $1
-//             ORDER BY submitted_at DESC
-//         `, [projectId]);
-
-//         res.json(result.rows);
-//     } catch (err) {
-//         console.error('Error fetching proposals:', err);
-//         res.status(500).json({ error: 'Failed to fetch proposals' });
-//     }
-// });
-
+router.use(authenticate);
+requireClient = requireRole('client');
+requireFreelancer = requireRole('freelancer');
 // POST /api/projects/:id/proposals
 router.post('/:id/proposals', requireFreelancer, async (req, res) => {
     const projectId = parseInt(req.params.id); // Ensure projectId is an integer
@@ -90,29 +38,6 @@ router.post('/:id/proposals', requireFreelancer, async (req, res) => {
         res.status(500).json({ error: 'Failed to submit proposal' });
     }
 });
-
-// router.get('/:id/proposals', async (req, res) => {
-//     const projectId = parseInt(req.params.id);
-//     if (isNaN(projectId)) {
-//         return res.status(400).json({ error: 'Invalid project ID' });
-//     }
-
-//     try {
-//         const result = await pool.query(`
-//             SELECT proposals.*, users.name AS freelancer_name
-//             FROM proposals
-//             JOIN users ON proposals.freelancer_id = users.id
-//             WHERE project_id = $1
-//             ORDER BY submitted_at DESC
-//         `, [projectId]);
-
-//         res.json(result.rows);
-//     } catch (err) {
-//         console.error('Error fetching proposals:', err);
-//         res.status(500).json({ error: 'Failed to fetch proposals' });
-//     }
-// });
-// POST /api/projects
 router.post('/', requireClient, async (req, res) => {
     const { title, description, budget, deadline } = req.body;
     const clientId = req.user.id;
@@ -148,7 +73,7 @@ router.get('/', async (req, res) => {
     }
 });
 
-router.get('/available', async (req, res) => {
+router.get('/available', requireFreelancer,  async (req, res) => {
     try {
         const result = await pool.query(`
         SELECT projects.*, users.name AS client_name
@@ -159,7 +84,7 @@ router.get('/available', async (req, res) => {
             SELECT project_id FROM proposals WHERE freelancer_id = $1
         )
         ORDER BY projects.created_at DESC
-      `);
+      `, [req.user.id]);
         res.json(result.rows);
     } catch (err) {
         console.error('Error fetching projects:', err);
@@ -170,7 +95,6 @@ router.get('/available', async (req, res) => {
 // GET /api/proposals/freelancer - Get all proposals by current freelancer
 router.get('/proposals/my', requireFreelancer, async (req, res) => {
     try {
-        console.log('Fetching proposals for freelancer ID:', req.user.id);
         const result = await pool.query(`
             SELECT 
                 p.*,
@@ -192,27 +116,6 @@ router.get('/proposals/my', requireFreelancer, async (req, res) => {
     }
 });
 
-// Get proposals for a project
-// router.get('/:id/proposals', async (req, res) => {
-//     try {
-//       const { id } = req.params;
-//       const result = await pool.query(`
-//         SELECT 
-//           p.*, 
-//           u.name as freelancer_name
-//         FROM proposals p
-//         JOIN users u ON p.freelancer_id = u.id
-//         WHERE p.project_id = $1
-//         ORDER BY p.created_at DESC
-//       `, [id]);
-
-//       res.json(result.rows);
-//     } catch (err) {
-//       console.error(err);
-//       res.status(500).json({ error: 'Failed to load proposals' });
-//     }
-//   });
-// Get proposals for a project with freelancer ratings
 router.get('/:id/proposals', async (req, res) => {
     try {
         const { id } = req.params;
@@ -333,85 +236,4 @@ router.put('/:id/complete', requireClient, async (req, res) => {
         return res.status(500).json({ error: 'Server error' });
     }
 });
-
-
-// GET /api/projects/:id/proposals - Get proposals for a specific project
-
-
-// PUT /api/proposals/:id/accept - Accept a proposal
-// router.put('/proposals/:id/accept', requireClient, async (req, res) => {
-//     try {
-//         const proposalId = parseInt(req.params.id);
-
-//         // 1. Verify the proposal exists and belongs to client's project
-//         const proposal = await pool.query(`
-//             SELECT p.* FROM proposals p
-//             JOIN projects pr ON p.project_id = pr.id
-//             WHERE p.id = $1 AND pr.client_id = $2
-//         `, [proposalId, req.user.id]);
-
-//         if (proposal.rows.length === 0) {
-//             return res.status(404).json({ error: 'Proposal not found or unauthorized' });
-//         }
-
-//         // 2. Update proposal status and project status
-//         await pool.query('BEGIN');
-
-//         // Accept the proposal
-//         await pool.query(
-//             'UPDATE proposals SET status = $1 WHERE id = $2',
-//             ['accepted', proposalId]
-//         );
-
-//         // Mark project as assigned
-//         await pool.query(
-//             'UPDATE projects SET status = $1 WHERE id = $2',
-//             ['assigned', proposal.rows[0].project_id]
-//         );
-
-//         // Reject all other proposals for this project
-//         await pool.query(
-//             'UPDATE proposals SET status = $1 WHERE project_id = $2 AND id != $3',
-//             ['rejected', proposal.rows[0].project_id, proposalId]
-//         );
-
-//         await pool.query('COMMIT');
-
-//         res.json({ message: 'Proposal accepted successfully' });
-//     } catch (err) {
-//         await pool.query('ROLLBACK');
-//         console.error('Error accepting proposal:', err);
-//         res.status(500).json({ error: 'Failed to accept proposal' });
-//     }
-// });
-
-// // PUT /api/proposals/:id/reject - Reject a proposal
-// router.put('/proposals/:id/reject', requireClient, async (req, res) => {
-//     try {
-//         const proposalId = parseInt(req.params.id);
-
-//         // Verify ownership
-//         const proposal = await pool.query(`
-//             SELECT p.* FROM proposals p
-//             JOIN projects pr ON p.project_id = pr.id
-//             WHERE p.id = $1 AND pr.client_id = $2
-//         `, [proposalId, req.user.id]);
-
-//         if (proposal.rows.length === 0) {
-//             return res.status(404).json({ error: 'Proposal not found or unauthorized' });
-//         }
-
-//         await pool.query(
-//             'UPDATE proposals SET status = $1 WHERE id = $2',
-//             ['rejected', proposalId]
-//         );
-
-//         res.json({ message: 'Proposal rejected successfully' });
-//     } catch (err) {
-//         console.error('Error rejecting proposal:', err);
-//         res.status(500).json({ error: 'Failed to reject proposal' });
-//     }
-// });
-
-
 module.exports = router;

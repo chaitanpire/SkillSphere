@@ -31,6 +31,7 @@ export default function PostProject() {
             const data = await res.json();
             if (res.ok) {
                 alert('Project posted successfully!');
+                navigate('/dashboard'); // Redirect to dashboard or projects page
             } else {
                 alert(data.error || 'Failed to post project');
             }

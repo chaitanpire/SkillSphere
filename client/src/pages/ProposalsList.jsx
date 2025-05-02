@@ -12,7 +12,6 @@ export default function ProposalsList() {
         let isMounted = true; // Track mounted state
 
         const fetchData = async () => {
-            console.log('Fetching proposals for project ID:', projectId);
             try {
                 setLoading(true);
                 setError(null);
@@ -20,7 +19,10 @@ export default function ProposalsList() {
                 // Fetch project title and proposals in parallel
                 const [projectRes, proposalsRes] = await Promise.all([
                     fetch(`http://localhost:4000/api/projects/${projectId}`),
-                    fetch(`http://localhost:4000/api/projects/${projectId}/proposals`)
+                    fetch(`http://localhost:4000/api/projects/${projectId}/proposals`),
+                    {
+                        headers: { token: localStorage.getItem('token') }  
+                    }
                 ]);
 
                 if (!projectRes.ok || !proposalsRes.ok) {
