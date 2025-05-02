@@ -47,20 +47,27 @@ router.post('/', requireClient, async (req, res) => {
     console.log('Received project:', req.body);
     console.log('Authenticated client ID:', req.user.id);
 
-
     try {
+        // Begin transaction
+        await pool.query('BEGIN');
+        
         const result = await pool.query(
             `INSERT INTO projects (client_id, title, description, budget, deadline)
-       VALUES ($1, $2, $3, $4, $5) RETURNING *`,
+            VALUES ($1, $2, $3, $4, $5) RETURNING *`,
             [clientId, title, description, budget, deadline]
         );
+        
+        // Commit transaction
+        await pool.query('COMMIT');
+        
         res.status(201).json(result.rows[0]);
     } catch (err) {
+        // Rollback in case of error
+        await pool.query('ROLLBACK');
         console.error('Error inserting project:', err);
         res.status(500).json({ error: 'Failed to post project' });
     }
 });
-
 router.get('/', async (req, res) => {
     try {
         const result = await pool.query(`
@@ -188,41 +195,57 @@ router.post('/:id/skills', async (req, res) => {
     }
 });
 
-router.get('/:id/proposals', async (req, res) => {
+router.post('/:id/proposals', requireFreelancer, async (req, res) => {
+    const projectId = parseInt(req.params.id);
+    const freelancerId = req.user.id;
+    const { cover_letter, proposed_amount } = req.body;
+
+    if (isNaN(projectId)) {
+        return res.status(400).json({ error: 'Invalid project ID' });
+    }
+    
     try {
-        const { id } = req.params;
-        const { sort } = req.query;
-        console.log('Fetching proposals for project ID:', id);
-        let orderBy = '';
-        if (sort === 'price') {
-            orderBy = 'ORDER BY p.proposed_amount ASC';
-        } else {
-            orderBy = 'ORDER BY pr.rating DESC';
+        // Begin transaction
+        await pool.query('BEGIN');
+        
+        // Check if project exists
+        const projectCheck = await pool.query(
+            'SELECT * FROM projects WHERE id = $1',
+            [projectId]
+        );
+        
+        if (projectCheck.rows.length === 0) {
+            await pool.query('ROLLBACK');
+            return res.status(404).json({ error: 'Project not found' });
         }
 
-        const result = await pool.query(`
-            SELECT 
-                p.*,
-                u.name as freelancer_name,
-                COALESCE(pr.rating, 0) as freelancer_rating,
-                pr.location as freelancer_location,
-                (
-                    SELECT string_agg(s.name, ',')
-                    FROM user_skills us
-                    JOIN skills s ON us.skill_id = s.id
-                    WHERE us.user_id = p.freelancer_id
-                ) as freelancer_skills
-            FROM proposals p
-            JOIN users u ON p.freelancer_id = u.id
-            JOIN profiles pr ON u.id = pr.user_id
-            WHERE p.project_id = $1
-            ${orderBy}
-        `, [id]);
+        // Check if freelancer already submitted a proposal for this project
+        const proposalCheck = await pool.query(
+            'SELECT * FROM proposals WHERE project_id = $1 AND freelancer_id = $2',
+            [projectId, freelancerId]
+        );
+        
+        if (proposalCheck.rows.length > 0) {
+            await pool.query('ROLLBACK');
+            return res.status(400).json({ error: 'You have already submitted a proposal for this project' });
+        }
 
-        res.json(result.rows);
+        // Insert proposal
+        const result = await pool.query(
+            `INSERT INTO proposals (project_id, freelancer_id, cover_letter, proposed_amount)
+             VALUES ($1, $2, $3, $4) RETURNING *`,
+            [projectId, freelancerId, cover_letter, proposed_amount]
+        );
+        
+        // Commit transaction
+        await pool.query('COMMIT');
+        
+        res.status(201).json(result.rows[0]);
     } catch (err) {
-        console.error(err);
-        res.status(500).json({ error: 'Failed to load proposals' });
+        // Rollback in case of error
+        await pool.query('ROLLBACK');
+        console.error('Error submitting proposal:', err);
+        res.status(500).json({ error: 'Failed to submit proposal' });
     }
 });
 router.get('/client', requireClient, async (req, res) => {

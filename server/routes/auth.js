@@ -10,6 +10,7 @@ const router = express.Router();
 router.post('/signup', async (req, res) => {
     const { name, email, password, role } = req.body;
     try {
+        pool.query('Begin');
         const hashedPassword = await bcrypt.hash(password, 10);
         const result = await pool.query(
             'INSERT INTO users (name, email, password, role) VALUES ($1, $2, $3, $4) RETURNING id, name, email, role',
@@ -29,7 +30,8 @@ router.post('/signup', async (req, res) => {
             },
             process.env.JWT_SECRET,
             { expiresIn: '2h' }
-        );
+        );  
+        pool.query('Commit');
 
         // Return token and user details
         res.status(201).json({
@@ -37,6 +39,8 @@ router.post('/signup', async (req, res) => {
             user
         });
     } catch (err) {
+        console.error('Error during signup:', err);
+        pool.query('Rollback');
         res.status(400).json({ error: 'Email already exists or bad request.' });
     }
 });
@@ -45,6 +49,7 @@ router.post('/signup', async (req, res) => {
 router.post('/login', async (req, res) => {
     const { email, password } = req.body;
     try {
+        pool.query('Begin');
         const result = await pool.query('SELECT * FROM users WHERE email = $1', [email]);
         const user = result.rows[0];
 
@@ -61,7 +66,8 @@ router.post('/login', async (req, res) => {
             },
             process.env.JWT_SECRET,
             { expiresIn: '2h' }
-        );
+        );  
+        pool.query('Commit');
 
         res.json({
             token,
@@ -73,6 +79,8 @@ router.post('/login', async (req, res) => {
             }
         });
     } catch (err) {
+        console.error('Error during login:', err);
+        pool.query('Rollback');
         res.status(500).json({ error: 'Login failed' });
     }
 });

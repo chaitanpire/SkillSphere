@@ -24,6 +24,8 @@ router.get('/skills', async (req, res) => {
 });
 
 // Add a skill to user
+
+// Add a skill to user with transaction
 router.post('/:id/skills', async (req, res) => {
     const userId = parseInt(req.params.id);
     const { skillId } = req.body;
@@ -33,6 +35,9 @@ router.post('/:id/skills', async (req, res) => {
     }
 
     try {
+        // Begin transaction
+        await pool.query('BEGIN');
+        
         // Check if skill exists
         const skillCheck = await pool.query(
             'SELECT id FROM skills WHERE id = $1',
@@ -40,26 +45,31 @@ router.post('/:id/skills', async (req, res) => {
         );
 
         if (skillCheck.rows.length === 0) {
+            await pool.query('ROLLBACK');
             return res.status(404).json({ error: 'Skill not found' });
         }
 
         // Add skill to user
         const result = await pool.query(
             `INSERT INTO user_skills (user_id, skill_id)
-         VALUES ($1, $2)
-         ON CONFLICT (user_id, skill_id) DO NOTHING
-         RETURNING *`,
+             VALUES ($1, $2)
+             ON CONFLICT (user_id, skill_id) DO NOTHING
+             RETURNING *`,
             [userId, skillId]
         );
+        
+        // Commit transaction
+        await pool.query('COMMIT');
 
         res.status(201).json(result.rows[0]);
     } catch (err) {
+        // Rollback in case of error
+        await pool.query('ROLLBACK');
         console.error('Error adding skill:', err);
         res.status(500).json({ error: 'Failed to add skill' });
     }
 });
 
-// Remove a skill from user
 router.delete('/:id/skills/:skillId', async (req, res) => {
     const userId = parseInt(req.params.id);
     const skillId = parseInt(req.params.skillId);
@@ -69,24 +79,32 @@ router.delete('/:id/skills/:skillId', async (req, res) => {
     }
 
     try {
+        // Begin transaction
+        await pool.query('BEGIN');
+        
         const result = await pool.query(
             `DELETE FROM user_skills
-         WHERE user_id = $1 AND skill_id = $2
-         RETURNING *`,
+             WHERE user_id = $1 AND skill_id = $2
+             RETURNING *`,
             [userId, skillId]
         );
 
         if (result.rows.length === 0) {
+            await pool.query('ROLLBACK');
             return res.status(404).json({ error: 'Skill not found for this user' });
         }
+        
+        // Commit transaction
+        await pool.query('COMMIT');
 
         res.json({ message: 'Skill removed successfully' });
     } catch (err) {
+        // Rollback in case of error
+        await pool.query('ROLLBACK');
         console.error('Error removing skill:', err);
         res.status(500).json({ error: 'Failed to remove skill' });
     }
 });
-
 // Bulk update user skills
 router.put('/:id/skills', async (req, res) => {
     const userId = parseInt(req.params.id);
