@@ -9,7 +9,21 @@ router.use(authenticate);
 // GET user + profile by ID
 // In your GET /:id route
 // Ensure your API always returns a profile object
-// users.js
+
+router.get('/skills', async (req, res) => {
+    try {
+        const result = await pool.query(
+            `SELECT s.id, s.name
+            FROM skills s`
+        );
+        res.json(result.rows);
+    } catch (err) {
+        console.error('Error fetching skills:', err);
+        res.status(500).json({ error: 'Failed to fetch skills' });
+    }
+});
+
+
 router.get('/:id', async (req, res) => {
 
     try {
@@ -24,7 +38,7 @@ router.get('/:id', async (req, res) => {
         }
 
         const profileResult = await pool.query(
-            'SELECT bio, location, hourly_rate, experience, rating FROM profiles WHERE user_id = $1',
+            'SELECT bio, location,experience, rating FROM profiles WHERE user_id = $1',
             [req.params.id]
         );
 
@@ -34,7 +48,6 @@ router.get('/:id', async (req, res) => {
             profile: profileResult.rows[0] || {
                 bio: null,
                 location: null,
-                hourly_rate: null,
                 experience: null,
                 rating: null
             }
@@ -53,16 +66,43 @@ function createEmptyProfile() {
     return {
         bio: null,
         location: null,
-        hourly_rate: null,
         experience: null,
         rating: null,
         profile_picture: null
     };
 }
 
+// Ensure userId is parsed to an integer properly before the query
+router.get('/:id/skills', async (req, res) => {
+    const userId = parseInt(req.params.id);  // Ensure it's an integer
+    if (isNaN(userId)) {
+        return res.status(400).json({ error: 'Invalid user ID' });
+    }
+
+    try {
+        // Check if the userId is being passed correctly in the query
+        console.log(`Fetching skills for user with ID: ${userId}`); // Debugging log
+
+        // Fetch user skills
+        const result = await pool.query(
+            `SELECT s.id, s.name
+             FROM user_skills us
+             JOIN skills s ON us.skill_id = s.id
+             WHERE us.user_id = $1`,
+            [userId]  // Pass the integer userId as the parameter
+        );
+
+        res.json(result.rows);
+    } catch (err) {
+        console.error('Error fetching user skills:', err);
+        res.status(500).json({ error: 'Failed to fetch user skills' });
+    }
+});
+
+
 router.put('/:id/profile', async (req, res) => {
     const userId = parseInt(req.params.id);
-    const { bio, location, hourly_rate, experience } = req.body;
+    const { bio, location, experience } = req.body;
 
     // Validate input
     if (!userId || isNaN(userId)) {
@@ -70,9 +110,6 @@ router.put('/:id/profile', async (req, res) => {
     }
 
     // Basic validation - adjust as needed
-    if (hourly_rate && isNaN(parseFloat(hourly_rate))) {
-        return res.status(400).json({ error: 'Hourly rate must be a number' });
-    }
 
     if (experience && isNaN(parseInt(experience))) {
         return res.status(400).json({ error: 'Experience must be a number' });
@@ -95,7 +132,6 @@ router.put('/:id/profile', async (req, res) => {
         const updateData = {
             bio: bio !== undefined ? bio : (currentProfile.rows[0]?.bio || null),
             location: location !== undefined ? location : (currentProfile.rows[0]?.location || null),
-            hourly_rate: hourly_rate !== undefined ? parseFloat(hourly_rate) : (currentProfile.rows[0]?.hourly_rate || null),
             experience: experience !== undefined ? parseInt(experience) : (currentProfile.rows[0]?.experience || null),
             updated_at: new Date() // Always update the timestamp
         };
@@ -104,14 +140,13 @@ router.put('/:id/profile', async (req, res) => {
             // Update existing profile
             const result = await pool.query(
                 `UPDATE profiles 
-                 SET bio = $1, location = $2, hourly_rate = $3, 
-                     experience = $4, updated_at = $5
-                 WHERE user_id = $6 
+                 SET bio = $1, location = $2, 
+                     experience = $3, updated_at = $4
+                 WHERE user_id = $5 
                  RETURNING *`,
                 [
                     updateData.bio,
                     updateData.location,
-                    updateData.hourly_rate,
                     updateData.experience,
                     updateData.updated_at,
                     userId
@@ -122,14 +157,13 @@ router.put('/:id/profile', async (req, res) => {
             // Create new profile
             const result = await pool.query(
                 `INSERT INTO profiles 
-                 (user_id, bio, location, hourly_rate, experience, created_at, updated_at)
-                 VALUES ($1, $2, $3, $4, $5, $6, $6)
+                 (user_id, bio, location, experience, created_at, updated_at)
+                 VALUES ($1, $2, $3, $4, $5, $5)
                  RETURNING *`,
                 [
                     userId,
                     updateData.bio,
                     updateData.location,
-                    updateData.hourly_rate,
                     updateData.experience,
                     updateData.updated_at
                 ]

@@ -25,7 +25,6 @@ const proposalRoutes = require('./routes/proposals');
 const messagesRouter = require('./routes/messages');
 // Add this near the top with other requires
 const authenticate = require('./middleware/authenticate');
-
 // Then modify your messages route to use the middleware:
 app.use('/api/messages', authenticate, messagesRouter);
 

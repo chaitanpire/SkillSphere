@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
-
+import '../styles/ProjectList.css';
 export default function ClientProjects() {
     const { user } = useAuth();
     const navigate = useNavigate();

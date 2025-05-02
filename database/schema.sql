@@ -29,7 +29,6 @@ CREATE TABLE profiles (
     user_id INTEGER PRIMARY KEY REFERENCES users(id) ON DELETE CASCADE,
     bio TEXT,
     location VARCHAR(100),
-    hourly_rate DECIMAL(10, 2),
     experience INTEGER,
     rating DECIMAL(3,2) DEFAULT 0.0,
     profile_picture TEXT,

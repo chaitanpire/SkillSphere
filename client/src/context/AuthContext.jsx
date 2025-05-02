@@ -7,7 +7,6 @@ export const useAuth = () => useContext(AuthContext);
 const createEmptyProfile = () => ({
   bio: null,
   location: null,
-  hourly_rate: null,
   experience: null,
   rating: null,
   profile_picture: null
