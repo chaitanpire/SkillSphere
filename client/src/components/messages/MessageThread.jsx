@@ -15,6 +15,7 @@ export default function MessageThread() {
   const [newMessage, setNewMessage] = useState('');
   const [otherUser, setOtherUser] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [unreadCount, setUnreadCount] = useState(0);
   const messagesEndRef = useRef(null);
 
   const fetchData = useCallback(async () => {
@@ -37,6 +38,8 @@ export default function MessageThread() {
 
       setMessages(messagesData);
       setOtherUser(userData);
+
+      setUnreadCount(0);
 
       // Mark messages as read
       if (socket) {
@@ -62,6 +65,7 @@ export default function MessageThread() {
 
     const handleNewMessage = (message) => {
       console.log('📩 New message received:', message);
+      setUnreadCount(prev => prev + 1);
       if (
         (message.sender_id === otherUserId && message.receiver_id === user.id) ||
         (message.sender_id === user.id && message.receiver_id === otherUserId)
@@ -111,6 +115,8 @@ export default function MessageThread() {
         id: Date.now(),
         sent_at: new Date().toISOString()
       }]);
+
+      setUnreadCount(prev => prev - 1);
     }
 
     setNewMessage('');
@@ -160,6 +166,11 @@ export default function MessageThread() {
           Send
         </button>
       </form>
+      {unreadCount > 0 && (
+        <div className="reload-messages" onClick={fetchData}>
+          <button className="reload-button">You have {unreadCount} unread messages. Click to reload.</button>
+        </div>
+      )}
     </div>
   );
 }
