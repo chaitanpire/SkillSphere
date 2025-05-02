@@ -23,6 +23,124 @@ router.get('/skills', async (req, res) => {
     }
 });
 
+// Add a skill to user
+router.post('/:id/skills', async (req, res) => {
+    const userId = parseInt(req.params.id);
+    const { skillId } = req.body;
+  
+    if (isNaN(userId)) {
+      return res.status(400).json({ error: 'Invalid user ID' });
+    }
+  
+    try {
+      // Check if skill exists
+      const skillCheck = await pool.query(
+        'SELECT id FROM skills WHERE id = $1',
+        [skillId]
+      );
+      
+      if (skillCheck.rows.length === 0) {
+        return res.status(404).json({ error: 'Skill not found' });
+      }
+  
+      // Add skill to user
+      const result = await pool.query(
+        `INSERT INTO user_skills (user_id, skill_id)
+         VALUES ($1, $2)
+         ON CONFLICT (user_id, skill_id) DO NOTHING
+         RETURNING *`,
+        [userId, skillId]
+      );
+  
+      res.status(201).json(result.rows[0]);
+    } catch (err) {
+      console.error('Error adding skill:', err);
+      res.status(500).json({ error: 'Failed to add skill' });
+    }
+  });
+  
+  // Remove a skill from user
+  router.delete('/:id/skills/:skillId', async (req, res) => {
+    const userId = parseInt(req.params.id);
+    const skillId = parseInt(req.params.skillId);
+  
+    if (isNaN(userId) || isNaN(skillId)) {
+      return res.status(400).json({ error: 'Invalid ID parameters' });
+    }
+  
+    try {
+      const result = await pool.query(
+        `DELETE FROM user_skills
+         WHERE user_id = $1 AND skill_id = $2
+         RETURNING *`,
+        [userId, skillId]
+      );
+  
+      if (result.rows.length === 0) {
+        return res.status(404).json({ error: 'Skill not found for this user' });
+      }
+  
+      res.json({ message: 'Skill removed successfully' });
+    } catch (err) {
+      console.error('Error removing skill:', err);
+      res.status(500).json({ error: 'Failed to remove skill' });
+    }
+  });
+  
+  // Bulk update user skills
+  router.put('/:id/skills', async (req, res) => {
+    const userId = parseInt(req.params.id);
+    const { skills } = req.body; // Array of skill IDs
+  
+    if (isNaN(userId)) {
+      return res.status(400).json({ error: 'Invalid user ID' });
+    }
+  
+    if (!Array.isArray(skills)) {
+      return res.status(400).json({ error: 'Skills must be an array' });
+    }
+  
+    try {
+      // Begin transaction
+      await pool.query('BEGIN');
+  
+      // Delete all existing skills for user
+      await pool.query(
+        'DELETE FROM user_skills WHERE user_id = $1',
+        [userId]
+      );
+  
+      // Insert new skills if array is not empty
+      if (skills.length > 0) {
+        // Create a query with multiple values
+        const values = skills.map((skillId, index) => 
+          `($${index * 2 + 1}, $${index * 2 + 2})`
+        ).join(', ');
+  
+        const query = `
+          INSERT INTO user_skills (user_id, skill_id)
+          VALUES ${values}
+          RETURNING *
+        `;
+  
+        // Flatten the array of [userId, skillId] pairs
+        const params = skills.flatMap(skillId => [userId, skillId]);
+  
+        await pool.query(query, params);
+      }
+  
+      // Commit transaction
+      await pool.query('COMMIT');
+  
+      res.json({ message: 'Skills updated successfully' });
+    } catch (err) {
+      // Rollback on error
+      await pool.query('ROLLBACK');
+      console.error('Error updating skills:', err);
+      res.status(500).json({ error: 'Failed to update skills' });
+    }
+  });
+
 
 router.get('/:id', async (req, res) => {
 

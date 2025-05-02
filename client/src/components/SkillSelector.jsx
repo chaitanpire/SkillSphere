@@ -6,30 +6,36 @@ import PropTypes from 'prop-types';
 const SkillSelector = ({ selectedSkills = [], onSkillsChange }) => {
   const { id } = useParams();
   const { user } = useAuth();
-
   const [allSkills, setAllSkills] = useState([]);
   const [userSkills, setUserSkills] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [isUpdating, setIsUpdating] = useState(false);
 
+  // Fetch skills data
   useEffect(() => {
     const fetchData = async () => {
       try {
         setLoading(true);
         setError(null);
-        
-        // Fetch all skills and user skills in parallel
+
         const [skillsRes, userSkillsRes] = await Promise.all([
-          fetch('http://localhost:4000/api/users/skills', {
-            headers: {
-              Authorization: `Bearer ${localStorage.getItem('token')}`,
-            },
-          }),
-          fetch(`http://localhost:4000/api/users/${id}/skills`, {
-            headers: {
-              Authorization: `Bearer ${localStorage.getItem('token')}`,
-            },
-          })
+          fetch('http://localhost:4000/api/users/skills',
+            {
+              headers: {
+                'Authorization': `Bearer ${localStorage.getItem('token')}`
+
+              }
+            }
+          ),
+          fetch(`http://localhost:4000/api/users/${id}/skills`,
+            {
+              headers: {
+                'Authorization': `Bearer ${localStorage.getItem('token')}`
+
+              }
+            }
+          )
         ]);
 
         if (!skillsRes.ok || !userSkillsRes.ok) {
@@ -54,55 +60,74 @@ const SkillSelector = ({ selectedSkills = [], onSkillsChange }) => {
     fetchData();
   }, [id]);
 
+  const updateSkills = async (newSkills) => {
+    try {
+      setIsUpdating(true);
+      const token = localStorage.getItem('token');
+
+      const response = await fetch(`http://localhost:4000/api/users/${id}/skills`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({ skills: newSkills })
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || 'Failed to update skills');
+      }
+
+      // Update local state only after successful API call
+      setUserSkills(newSkills);
+      onSkillsChange(newSkills);
+    } catch (err) {
+      console.error('Error updating skills:', err);
+      setError(err.message);
+    } finally {
+      setIsUpdating(false);
+    }
+  };
+
   const handleSkillChange = (e) => {
     const { value, checked } = e.target;
     const skillId = parseInt(value);
 
-    const newSelectedSkills = checked
-      ? [...selectedSkills, skillId]
-      : selectedSkills.filter(id => id !== skillId);
+    let newSkills;
+    if (checked) {
+      newSkills = [...userSkills, skillId];
+    } else {
+      newSkills = userSkills.filter(id => id !== skillId);
+    }
 
-    onSkillsChange(newSelectedSkills);
+    updateSkills(newSkills);
   };
 
   if (loading) {
-    return (
-      <div className="skills-loading">
-        <div className="loading-spinner"></div>
-        <span>Loading skills...</span>
-      </div>
-    );
+    return <div className="loading">Loading skills...</div>;
   }
 
   if (error) {
-    return (
-      <div className="skills-error">
-        <span>⚠️ Error loading skills: {error}</span>
-        <button onClick={() => window.location.reload()}>Retry</button>
-      </div>
-    );
+    return <div className="error">Error: {error}</div>;
   }
 
   return (
     <div className="skill-selector">
-      <p className="skill-hint">Select the skills you possess</p>
-      
+      {/* <h3>Skills {isUpdating && <span className="updating-indicator">(Updating...)</span>}</h3> */}
       <div className="skills-grid">
-        {allSkills.length > 0 ? (
-          allSkills.map(skill => (
-            <label key={skill.id} className="skill-item">
-              <input
-                type="checkbox"
-                value={skill.id}
-                checked={userSkills.includes(skill.id) || selectedSkills.includes(skill.id)}
-                onChange={handleSkillChange}
-              />
-              <span className="skill-name">{skill.name}</span>
-            </label>
-          ))
-        ) : (
-          <p className="no-skills">No skills available</p>
-        )}
+        {allSkills.map(skill => (
+          <label key={skill.id} className="skill-item">
+            <input
+              type="checkbox"
+              value={skill.id}
+              checked={userSkills.includes(skill.id)}
+              onChange={handleSkillChange}
+              disabled={isUpdating}
+            />
+            <span className="skill-name">{skill.name}</span>
+          </label>
+        ))}
       </div>
     </div>
   );
