@@ -63,6 +63,12 @@ CREATE TABLE projects (
     UNIQUE (title, client_id) -- Ensure a client cannot post two projects with the same title
 );
 
+CREATE TABLE project_skills (
+    project_id INTEGER REFERENCES projects(id) ON DELETE CASCADE,
+    skill_id INTEGER REFERENCES skills(id) ON DELETE CASCADE,
+    PRIMARY KEY (project_id, skill_id)
+);
+
 -- PROPOSALS
 CREATE TABLE proposals (
     id SERIAL PRIMARY KEY,

@@ -9,7 +9,6 @@ import { AuthProvider, useAuth } from './context/AuthContext';
 import PostProject from './pages/PostProject';
 import ProfilePage from './pages/ProfilePage';
 import AvailableProjects from './pages/AvailableProjects';
-import EditProfile from './pages/EditProfile';
 import ProposalForm from './pages/ProposalForm';
 import MyProposals from './pages/MyProposals';
 import ClientProjects from './pages/ClientProjects';
