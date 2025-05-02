@@ -7,10 +7,12 @@ const SkillSelector = ({ selectedSkills = [], onSkillsChange }) => {
   const { id } = useParams();
   const { user } = useAuth();
   const [allSkills, setAllSkills] = useState([]);
+  const [filteredSkills, setFilteredSkills] = useState([]);
   const [userSkills, setUserSkills] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [isUpdating, setIsUpdating] = useState(false);
+  const [searchTerm, setSearchTerm] = useState('');
 
   // Fetch skills data
   useEffect(() => {
@@ -20,22 +22,16 @@ const SkillSelector = ({ selectedSkills = [], onSkillsChange }) => {
         setError(null);
 
         const [skillsRes, userSkillsRes] = await Promise.all([
-          fetch('http://localhost:4000/api/users/skills',
-            {
-              headers: {
-                'Authorization': `Bearer ${localStorage.getItem('token')}`
-
-              }
+          fetch('http://localhost:4000/api/users/skills', {
+            headers: {
+              'Authorization': `Bearer ${localStorage.getItem('token')}`
             }
-          ),
-          fetch(`http://localhost:4000/api/users/${id}/skills`,
-            {
-              headers: {
-                'Authorization': `Bearer ${localStorage.getItem('token')}`
-
-              }
+          }),
+          fetch(`http://localhost:4000/api/users/${id}/skills`, {
+            headers: {
+              'Authorization': `Bearer ${localStorage.getItem('token')}`
             }
-          )
+          })
         ]);
 
         if (!skillsRes.ok || !userSkillsRes.ok) {
@@ -48,6 +44,7 @@ const SkillSelector = ({ selectedSkills = [], onSkillsChange }) => {
         ]);
 
         setAllSkills(Array.isArray(skillsData) ? skillsData : []);
+        setFilteredSkills(Array.isArray(skillsData) ? skillsData : []);
         setUserSkills(Array.isArray(userSkillsData) ? userSkillsData.map(skill => skill.id) : []);
       } catch (err) {
         console.error('Error loading skills:', err);
@@ -59,6 +56,18 @@ const SkillSelector = ({ selectedSkills = [], onSkillsChange }) => {
 
     fetchData();
   }, [id]);
+
+  // Filter skills based on search term
+  useEffect(() => {
+    if (searchTerm.trim() === '') {
+      setFilteredSkills(allSkills);
+    } else {
+      const filtered = allSkills.filter(skill =>
+        skill.name.toLowerCase().includes(searchTerm.toLowerCase())
+      );
+      setFilteredSkills(filtered);
+    }
+  }, [searchTerm, allSkills]);
 
   const updateSkills = async (newSkills) => {
     try {
@@ -79,7 +88,6 @@ const SkillSelector = ({ selectedSkills = [], onSkillsChange }) => {
         throw new Error(errorData.error || 'Failed to update skills');
       }
 
-      // Update local state only after successful API call
       setUserSkills(newSkills);
       onSkillsChange(newSkills);
     } catch (err) {
@@ -104,6 +112,10 @@ const SkillSelector = ({ selectedSkills = [], onSkillsChange }) => {
     updateSkills(newSkills);
   };
 
+  const handleSearchChange = (e) => {
+    setSearchTerm(e.target.value);
+  };
+
   if (loading) {
     return <div className="loading">Loading skills...</div>;
   }
@@ -114,20 +126,34 @@ const SkillSelector = ({ selectedSkills = [], onSkillsChange }) => {
 
   return (
     <div className="skill-selector">
-      {/* <h3>Skills {isUpdating && <span className="updating-indicator">(Updating...)</span>}</h3> */}
+      <div className="skill-search-container">
+        <input
+          type="text"
+          placeholder="Search skills..."
+          value={searchTerm}
+          onChange={handleSearchChange}
+          className="skill-search-input"
+        />
+      </div>
       <div className="skills-grid">
-        {allSkills.map(skill => (
-          <label key={skill.id} className="skill-item">
-            <input
-              type="checkbox"
-              value={skill.id}
-              checked={userSkills.includes(skill.id)}
-              onChange={handleSkillChange}
-              disabled={isUpdating}
-            />
-            <span className="skill-name">{skill.name}</span>
-          </label>
-        ))}
+        {filteredSkills.length > 0 ? (
+          filteredSkills.map(skill => (
+            <label key={skill.id} className="skill-item">
+              <input
+                type="checkbox"
+                value={skill.id}
+                checked={userSkills.includes(skill.id)}
+                onChange={handleSkillChange}
+                disabled={isUpdating}
+              />
+              <span className="skill-name">{skill.name}</span>
+            </label>
+          ))
+        ) : (
+          <div className="no-results">
+            {searchTerm ? 'No skills match your search' : 'No skills available'}
+          </div>
+        )}
       </div>
     </div>
   );
