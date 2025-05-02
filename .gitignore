@@ -6,7 +6,7 @@
 
 # Allow the database folder and schema.sql
 !database/
-!database/schema.sql
+!database/*
 
 # Allow the client and server folders
 !client/

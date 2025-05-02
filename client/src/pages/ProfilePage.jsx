@@ -16,7 +16,7 @@ export default function ProfilePage() {
       try {
         setLoading(true);
         setError(null);
-        
+
         const token = localStorage.getItem('token');
         const res = await fetch(`http://localhost:4000/api/users/${id}`, {
           headers: {
@@ -24,13 +24,14 @@ export default function ProfilePage() {
             'Content-Type': 'application/json'
           }
         });
-        
+
         if (!res.ok) {
           const errorData = await res.json();
           throw new Error(errorData.error || 'Failed to fetch profile');
         }
-        
+
         const data = await res.json();
+        console.log('Profile data:', data); // Debug log
         setProfileUser(data);
       } catch (err) {
         console.error('Profile fetch error:', err);
@@ -61,7 +62,7 @@ export default function ProfilePage() {
         <div className="error-icon">⚠️</div>
         <h3>Error Loading Profile</h3>
         <p>{error}</p>
-        <button 
+        <button
           className="retry-button"
           onClick={() => window.location.reload()}
         >
@@ -129,12 +130,12 @@ export default function ProfilePage() {
                 </>
               )}
 
-              {profile.skills?.length > 0 && renderSection(
+              {profileUser?.skills && profileUser.skills.length > 0 && renderSection(
                 'Skills',
                 <div className="skills-container">
-                  {profile.skills.map((skill, index) => (
-                    <span key={index} className="skill-tag">
-                      {skill}
+                  {profileUser.skills.map(skill => (
+                    <span key={skill.id} className="skill-tag">
+                      {skill.name}
                     </span>
                   ))}
                 </div>
