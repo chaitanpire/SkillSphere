@@ -74,6 +74,12 @@ export default function FreelancerProjects() {
                 >
                   Submit Proposal
                 </button>
+                <button
+                  className="view-button"
+                  onClick={() => navigate(`/messages/${project.client_id}`)}
+                >
+                  Message Client
+                </button>
               </div>
             </div>
           ))}
