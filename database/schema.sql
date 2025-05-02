@@ -64,10 +64,16 @@ CREATE TABLE projects (
 );
 
 CREATE TABLE project_skills (
-    project_id INTEGER REFERENCES projects(id) ON DELETE CASCADE,
-    skill_id INTEGER REFERENCES skills(id) ON DELETE CASCADE,
-    PRIMARY KEY (project_id, skill_id)
-);
+            project_id INTEGER NOT NULL REFERENCES projects(id) ON DELETE CASCADE,
+            skill_id INTEGER NOT NULL REFERENCES skills(id) ON DELETE CASCADE,
+            created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+            PRIMARY KEY (project_id, skill_id)
+        );
+        
+CREATE INDEX project_skills_project_id_idx ON project_skills(project_id);
+CREATE INDEX project_skills_skill_id_idx ON project_skills(skill_id);
+
+
 
 -- PROPOSALS
 CREATE TABLE proposals (

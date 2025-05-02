@@ -8,6 +8,7 @@ router.use(authenticate);
 requireClient = requireRole('client');
 requireFreelancer = requireRole('freelancer');
 // POST /api/projects/:id/proposals
+
 router.post('/:id/proposals', requireFreelancer, async (req, res) => {
     const projectId = parseInt(req.params.id); // Ensure projectId is an integer
     const freelancerId = req.user.id; // From JWT token
@@ -38,6 +39,8 @@ router.post('/:id/proposals', requireFreelancer, async (req, res) => {
         res.status(500).json({ error: 'Failed to submit proposal' });
     }
 });
+
+
 router.post('/', requireClient, async (req, res) => {
     const { title, description, budget, deadline } = req.body;
     const clientId = req.user.id;
@@ -73,7 +76,7 @@ router.get('/', async (req, res) => {
     }
 });
 
-router.get('/available', requireFreelancer,  async (req, res) => {
+router.get('/available', requireFreelancer, async (req, res) => {
     try {
         const result = await pool.query(`
         SELECT projects.*, users.name AS client_name
@@ -113,6 +116,75 @@ router.get('/proposals/my', requireFreelancer, async (req, res) => {
     } catch (err) {
         console.error('Error fetching proposals:', err);
         res.status(500).json({ error: 'Failed to fetch proposals' });
+    }
+});
+
+// Update the route to handle an array of skills
+router.post('/:id/skills', async (req, res) => {
+    const projectId = parseInt(req.params.id);
+    const { skills } = req.body; // Change from skillId to skills array
+
+    if (isNaN(projectId)) {
+        return res.status(400).json({ error: 'Invalid project ID' });
+    }
+
+    // Validate that skills is an array
+    if (!Array.isArray(skills)) {
+        return res.status(400).json({ error: 'Skills must be an array' });
+    }
+
+    try {
+        // Begin transaction
+        await pool.query('BEGIN');
+
+        // First check if project exists and belongs to this client
+        const projectCheck = await pool.query(
+            'SELECT id FROM projects WHERE id = $1 AND client_id = $2',
+            [projectId, req.user.id]
+        );
+
+        if (projectCheck.rows.length === 0) {
+            await pool.query('ROLLBACK');
+            return res.status(404).json({ error: 'Project not found or unauthorized' });
+        }
+
+        // If skills array is empty, just return success
+        if (skills.length === 0) {
+            await pool.query('COMMIT');
+            return res.status(200).json({ message: 'No skills to add' });
+        }
+
+        // Insert each skill for the project
+        const insertPromises = skills.map(skillId =>
+            pool.query(
+                `INSERT INTO project_skills (project_id, skill_id)
+                 VALUES ($1, $2)
+                 ON CONFLICT (project_id, skill_id) DO NOTHING`,
+                [projectId, skillId]
+            )
+        );
+
+        await Promise.all(insertPromises);
+
+        // Get all skills for the project after updates
+        const result = await pool.query(
+            `SELECT ps.project_id, ps.skill_id, s.name as skill_name
+             FROM project_skills ps
+             JOIN skills s ON ps.skill_id = s.id
+             WHERE ps.project_id = $1`,
+            [projectId]
+        );
+
+        await pool.query('COMMIT');
+
+        res.status(201).json({
+            message: 'Skills added successfully',
+            skills: result.rows
+        });
+    } catch (err) {
+        await pool.query('ROLLBACK');
+        console.error('Error adding skills to project:', err);
+        res.status(500).json({ error: 'Failed to add skills' });
     }
 });
 
@@ -173,6 +245,7 @@ router.get('/client', requireClient, async (req, res) => {
     }
 });
 
+// Add this to your GET project/:id route to include skills in the project details
 router.get('/:id', async (req, res) => {
     const projectId = parseInt(req.params.id);
     if (isNaN(projectId)) {
@@ -180,18 +253,33 @@ router.get('/:id', async (req, res) => {
     }
 
     try {
-        const result = await pool.query(`
+        // Get project details
+        const projectResult = await pool.query(`
             SELECT projects.*, users.name AS client_name
             FROM projects
             JOIN users ON projects.client_id = users.id
             WHERE projects.id = $1
         `, [projectId]);
 
-        if (result.rows.length === 0) {
+        if (projectResult.rows.length === 0) {
             return res.status(404).json({ error: 'Project not found' });
         }
 
-        res.json(result.rows[0]);
+        // Get project skills
+        const skillsResult = await pool.query(`
+            SELECT s.id, s.name
+            FROM project_skills ps
+            JOIN skills s ON ps.skill_id = s.id
+            WHERE ps.project_id = $1
+        `, [projectId]);
+
+        // Combine project with its skills
+        const project = {
+            ...projectResult.rows[0],
+            skills: skillsResult.rows
+        };
+
+        res.json(project);
     } catch (err) {
         console.error('Error fetching project:', err);
         res.status(500).json({ error: 'Failed to fetch project' });
