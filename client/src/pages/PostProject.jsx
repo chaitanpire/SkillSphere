@@ -63,6 +63,7 @@ const PostProject = () => {
 
     const handleBack = () => {
         setState(prev => ({ ...prev, step: 1, error: null }));
+        navigate('/client-projects')
     };
 
     const handleSubmit = async (e) => {
@@ -228,7 +229,7 @@ const PostProject = () => {
                                 onClick={handleBack}
                                 disabled={state.isSubmitting}
                             >
-                                Back
+                                Cancel
                             </button>
                             <button 
                                 type="submit" 

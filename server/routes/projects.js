@@ -9,37 +9,63 @@ requireClient = requireRole('client');
 requireFreelancer = requireRole('freelancer');
 // POST /api/projects/:id/proposals
 
-router.post('/:id/proposals', requireFreelancer, async (req, res) => {
-    const projectId = parseInt(req.params.id); // Ensure projectId is an integer
-    const freelancerId = req.user.id; // From JWT token
-    const { cover_letter, proposed_amount } = req.body;
-
+// // GET /api/projects/:id/proposals - Get all proposals for a specific project with sorting
+// GET /api/projects/:id/proposals - Get all proposals for a specific project with sorting
+router.get('/:id/proposals', requireClient, async (req, res) => {
+    const projectId = parseInt(req.params.id);
+    const sortBy = req.query.sort || 'rating'; // Default sort by rating
+    
     if (isNaN(projectId)) {
         return res.status(400).json({ error: 'Invalid project ID' });
     }
+
     try {
-        // Check if project exists
+        // Verify the project belongs to the requesting client
         const projectCheck = await pool.query(
-            'SELECT * FROM projects WHERE id = $1',
-            [projectId]
+            'SELECT * FROM projects WHERE id = $1 AND client_id = $2',
+            [projectId, req.user.id]
         );
+        
         if (projectCheck.rows.length === 0) {
-            return res.status(404).json({ error: 'Project not found' });
+            return res.status(404).json({ error: 'Project not found or unauthorized' });
         }
 
-        // Insert proposal
-        const result = await pool.query(
-            `INSERT INTO proposals (project_id, freelancer_id, cover_letter, proposed_amount)
-             VALUES ($1, $2, $3, $4) RETURNING *`,
-            [projectId, freelancerId, cover_letter, proposed_amount]
-        );
-        res.status(201).json(result.rows[0]);
+        // Fetch proposals with freelancer info and ratings
+        let query = `
+            SELECT 
+                p.*,
+                u.name AS freelancer_name,
+                COALESCE(AVG(r.rating), 0) AS freelancer_rating,
+                ARRAY_TO_STRING(ARRAY(
+                    SELECT s.name 
+                    FROM user_skills us
+                    JOIN skills s ON us.skill_id = s.id
+                    WHERE us.user_id = p.freelancer_id
+                ), ', ') AS freelancer_skills
+            FROM proposals p
+            JOIN users u ON p.freelancer_id = u.id
+            LEFT JOIN ratings r ON r.rated_id = p.freelancer_id
+            WHERE p.project_id = $1
+            GROUP BY p.id, u.name
+        `;
+        
+        // Add ORDER BY clause based on sortBy parameter
+        if (sortBy === 'rating') {
+            query += ` ORDER BY freelancer_rating DESC`;
+        } else if (sortBy === 'price') {
+            query += ` ORDER BY p.proposed_amount ASC`;
+        } else {
+            query += ` ORDER BY p.submitted_at DESC`; // Default fallback
+        }
+        
+        const result = await pool.query(query, [projectId]);
+        
+        res.json(result.rows);
     } catch (err) {
-        console.error('Error submitting proposal:', err);
-        res.status(500).json({ error: 'Failed to submit proposal' });
+        console.error('Error fetching proposals:', err);
+        res.status(500).json({ error: 'Failed to fetch proposals' });
     }
 });
-
 
 router.post('/', requireClient, async (req, res) => {
     const { title, description, budget, deadline } = req.body;
