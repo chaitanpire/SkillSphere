@@ -99,6 +99,14 @@ export default function ProfilePage() {
               {Object.keys(profile).length > 0 ? 'Edit Profile' : 'Complete Profile'}
             </button>
           )}
+          {!isOwner && (
+                <button
+                  className="edit-profile-btn"
+                  onClick={() => navigate(`/messages/${profileUser?.id}`)}
+                >
+                  Message User
+                </button>
+          )}
         </div>
 
         <div className="profile-content">

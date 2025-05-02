@@ -197,6 +197,17 @@ export default function ProjectProposals() {
                             <div className="proposal-header">
                                 <div className="freelancer-info">
                                     <h3>{proposal.freelancer_name}</h3>
+
+                                    <span className={`status-badge ${proposal.status}`}>
+                                        {proposal.status || 'pending'}
+                                    </span>
+
+                                    <div className="freelancer-profile">
+                                        <button onClick={() => navigate(`/profile/${proposal.freelancer_id}`)}>
+                                            View Profile
+                                        </button>
+                                    </div>
+                                    
                                     <div className="rating">
                                         {Array.from({ length: 5 }).map((_, i) => (
                                             <span key={i} className={i < Math.floor(proposal.freelancer_rating || 0) ? 'filled' : ''}>
@@ -209,9 +220,7 @@ export default function ProjectProposals() {
                                         {proposal.freelancer_location || 'Location not specified'}
                                     </p>
                                 </div>
-                                <span className={`status-badge ${proposal.status}`}>
-                                    {proposal.status || 'pending'}
-                                </span>
+                                
                             </div>
 
                             <div className="proposal-details">
@@ -231,7 +240,9 @@ export default function ProjectProposals() {
 
                                 <div className="cover-letter">
                                     <h4>Cover Letter:</h4>
-                                    <p>{proposal.cover_letter}</p>
+                                    <div className="scrollable-box" style={{ maxHeight: '200px', overflowY: 'auto' }}>
+                                        <p>{proposal.cover_letter}</p>
+                                    </div>
                                 </div>
 
                                 {proposal.freelancer_skills && (
