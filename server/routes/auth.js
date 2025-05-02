@@ -15,7 +15,27 @@ router.post('/signup', async (req, res) => {
             'INSERT INTO users (name, email, password, role) VALUES ($1, $2, $3, $4) RETURNING id, name, email, role',
             [name, email, hashedPassword, role]
         );
-        res.status(201).json(result.rows[0]);
+
+        const r = await pool.query('SELECT * FROM users WHERE email = $1', [email]);
+        const user = r.rows[0];
+
+        // Generate JWT token
+        const token = jwt.sign(
+            {
+                id: user.id,
+                email: user.email,
+                role: user.role,
+                name: user.name
+            },
+            process.env.JWT_SECRET,
+            { expiresIn: '2h' }
+        );
+
+        // Return token and user details
+        res.status(201).json({
+            token,
+            user
+        });
     } catch (err) {
         res.status(400).json({ error: 'Email already exists or bad request.' });
     }
