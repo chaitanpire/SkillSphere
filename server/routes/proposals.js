@@ -111,4 +111,74 @@ router.put('/:id/reject',requireClient, async (req, res) => {
   }
 });
 
+
+router.delete('/:id', requireFreelancer, async (req, res) => {
+  const proposalId = parseInt(req.params.id);
+  const freelancerId = req.user.id;
+
+  if (isNaN(proposalId)) {
+      return res.status(400).json({ error: 'Invalid proposal ID' });
+  }
+
+  try {
+      // Begin transaction
+      await pool.query('BEGIN');
+      
+      // Check if proposal exists and belongs to this freelancer
+      const proposalCheck = await pool.query(
+          'SELECT * FROM proposals WHERE id = $1 AND freelancer_id = $2',
+          [proposalId, freelancerId]
+      );
+      
+      if (proposalCheck.rows.length === 0) {
+          await pool.query('ROLLBACK');
+          return res.status(404).json({ error: 'Proposal not found or unauthorized' });
+      }
+
+      // Check if the proposal can be withdrawn (only pending proposals can be withdrawn)
+      if (proposalCheck.rows[0].status !== 'pending') {
+          await pool.query('ROLLBACK');
+          return res.status(400).json({ error: 'Only pending proposals can be withdrawn' });
+      }
+
+      // Delete the proposal
+      await pool.query(
+          'DELETE FROM proposals WHERE id = $1',
+          [proposalId]
+      );
+      
+      // Commit transaction
+      await pool.query('COMMIT');
+      
+      res.json({ message: 'Proposal withdrawn successfully' });
+  } catch (err) {
+      // Rollback in case of error
+      await pool.query('ROLLBACK');
+      console.error('Error withdrawing proposal:', err);
+      res.status(500).json({ error: 'Failed to withdraw proposal' });
+  }
+});
+
+router.get('/my', requireFreelancer, async (req, res) => {
+  try {
+      const result = await pool.query(`
+          SELECT 
+              p.*,
+              pr.title AS project_title,
+              pr.description AS project_description,
+              pr.budget AS project_budget,
+              pr.deadline AS project_deadline,
+              u.name AS client_name
+          FROM proposals p
+          JOIN projects pr ON p.project_id = pr.id
+          JOIN users u ON pr.client_id = u.id
+          WHERE p.freelancer_id = $1
+          ORDER BY p.submitted_at DESC
+      `, [req.user.id]);
+      res.json(result.rows);
+  } catch (err) {
+      console.error('Error fetching proposals:', err);
+      res.status(500).json({ error: 'Failed to fetch proposals' });
+  }
+});
 module.exports = router;

@@ -19,7 +19,7 @@ export default function MyProposals() {
     const fetchProposals = async () => {
       try {
         const token = localStorage.getItem('token');
-        const response = await fetch('http://localhost:4000/api/projects/proposals/my', {
+        const response = await fetch('http://localhost:4000/api/proposals/my', {
           headers: {
             'Authorization': `Bearer ${token}`,
             'Content-Type': 'application/json'
@@ -46,6 +46,7 @@ export default function MyProposals() {
   const handleWithdraw = async (proposalId) => {
     try {
       const token = localStorage.getItem('token');
+      // Changed URL to match the API structure
       const response = await fetch(`http://localhost:4000/api/proposals/${proposalId}`, {
         method: 'DELETE',
         headers: {

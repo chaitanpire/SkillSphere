@@ -11,6 +11,7 @@ const PostProject = () => {
             description: '',
             budget: '',
             deadline: '',
+            expected_work_hours: '',
             skills: []
         },
         loading: false,
@@ -83,7 +84,8 @@ const PostProject = () => {
                     title: state.formData.title,
                     description: state.formData.description,
                     budget: state.formData.budget,
-                    deadline: state.formData.deadline
+                    deadline: state.formData.deadline,
+                    expected_work_hours: state.formData.expected_work_hours
                 })
             });
     
@@ -209,6 +211,21 @@ const PostProject = () => {
                                     value={state.formData.deadline}
                                     onChange={handleInputChange}
                                     min={new Date().toISOString().split('T')[0]}
+                                    required
+                                />
+                            </div>
+                        </div>
+
+                        <div className="form-row">
+                            <div className="form-group">
+                                <label>Expected Work Hours</label>
+                                <input
+                                    type="number"
+                                    name="expected_work_hours"
+                                    value={state.formData.expected_work_hours}
+                                    onChange={handleInputChange}
+                                    placeholder="Estimated hours to complete"
+                                    min="1"
                                     required
                                 />
                             </div>

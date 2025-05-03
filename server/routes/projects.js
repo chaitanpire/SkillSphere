@@ -11,6 +11,7 @@ requireFreelancer = requireRole('freelancer');
 
 // // GET /api/projects/:id/proposals - Get all proposals for a specific project with sorting
 // GET /api/projects/:id/proposals - Get all proposals for a specific project with sorting
+// GET /api/projects/:id/proposals - Get all proposals for a specific project with sorting
 router.get('/:id/proposals', requireClient, async (req, res) => {
     const projectId = parseInt(req.params.id);
     const sortBy = req.query.sort || 'rating'; // Default sort by rating
@@ -35,6 +36,7 @@ router.get('/:id/proposals', requireClient, async (req, res) => {
             SELECT 
                 p.*,
                 u.name AS freelancer_name,
+                u.id AS freelancer_id,
                 COALESCE(AVG(r.rating), 0) AS freelancer_rating,
                 ARRAY_TO_STRING(ARRAY(
                     SELECT s.name 
@@ -46,7 +48,7 @@ router.get('/:id/proposals', requireClient, async (req, res) => {
             JOIN users u ON p.freelancer_id = u.id
             LEFT JOIN ratings r ON r.rated_id = p.freelancer_id
             WHERE p.project_id = $1
-            GROUP BY p.id, u.name
+            GROUP BY p.id, u.name, u.id
         `;
         
         // Add ORDER BY clause based on sortBy parameter
@@ -68,7 +70,7 @@ router.get('/:id/proposals', requireClient, async (req, res) => {
 });
 
 router.post('/', requireClient, async (req, res) => {
-    const { title, description, budget, deadline } = req.body;
+    const { title, description, budget, deadline, expected_work_hours } = req.body;
     const clientId = req.user.id;
     console.log('Received project:', req.body);
     console.log('Authenticated client ID:', req.user.id);
@@ -78,9 +80,9 @@ router.post('/', requireClient, async (req, res) => {
         await pool.query('BEGIN');
         
         const result = await pool.query(
-            `INSERT INTO projects (client_id, title, description, budget, deadline)
-            VALUES ($1, $2, $3, $4, $5) RETURNING *`,
-            [clientId, title, description, budget, deadline]
+            `INSERT INTO projects (client_id, title, description, budget, deadline, expected_work_hours)
+            VALUES ($1, $2, $3, $4, $5, $6) RETURNING *`,
+            [clientId, title, description, budget, deadline, expected_work_hours]
         );
         
         // Commit transaction
@@ -94,12 +96,21 @@ router.post('/', requireClient, async (req, res) => {
         res.status(500).json({ error: 'Failed to post project' });
     }
 });
+
 router.get('/', async (req, res) => {
     try {
         const result = await pool.query(`
-        SELECT projects.*, users.name AS client_name
+        SELECT 
+            projects.*, 
+            users.name AS client_name,
+            ARRAY_AGG(
+                json_build_object('id', s.id, 'name', s.name)
+            ) FILTER (WHERE s.id IS NOT NULL) AS skills
         FROM projects
         JOIN users ON projects.client_id = users.id
+        LEFT JOIN project_skills ps ON projects.id = ps.project_id
+        LEFT JOIN skills s ON ps.skill_id = s.id
+        GROUP BY projects.id, users.name
         ORDER BY projects.created_at DESC
       `);
         res.json(result.rows);
@@ -109,48 +120,93 @@ router.get('/', async (req, res) => {
     }
 });
 
+
 router.get('/available', requireFreelancer, async (req, res) => {
     try {
-        const result = await pool.query(`
-        SELECT projects.*, users.name AS client_name
-        FROM projects
-        JOIN users ON projects.client_id = users.id
-        WHERE projects.status = 'open' 
-        AND projects.id NOT IN (
-            SELECT project_id FROM proposals WHERE freelancer_id = $1
-        )
-        ORDER BY projects.created_at DESC
-      `, [req.user.id]);
+        // Extract filter parameters from the query string
+        const { 
+            minBudget, 
+            maxBudget, 
+            minWorkHours, 
+            maxWorkHours,
+            skills 
+        } = req.query;
+
+        // Start building the query
+        let query = `
+            SELECT 
+                projects.*,
+                users.name AS client_name,
+                ARRAY_AGG(
+                    json_build_object('id', s.id, 'name', s.name)
+                ) FILTER (WHERE s.id IS NOT NULL) AS skills
+            FROM projects
+            JOIN users ON projects.client_id = users.id
+            LEFT JOIN project_skills ps ON projects.id = ps.project_id
+            LEFT JOIN skills s ON ps.skill_id = s.id
+            WHERE projects.status = 'open' 
+            AND projects.id NOT IN (
+                SELECT project_id FROM proposals WHERE freelancer_id = $1
+            )
+        `;
+
+        // Parameters array starts with the user ID
+        const params = [req.user.id];
+        let paramCounter = 2; // Starting from $2
+
+        // Add budget filters if provided
+        if (minBudget) {
+            query += ` AND projects.budget >= $${paramCounter}`;
+            params.push(parseFloat(minBudget));
+            paramCounter++;
+        }
+        
+        if (maxBudget) {
+            query += ` AND projects.budget <= $${paramCounter}`;
+            params.push(parseFloat(maxBudget));
+            paramCounter++;
+        }
+
+        // Add work hours filters if provided
+        if (minWorkHours) {
+            query += ` AND projects.expected_work_hours >= $${paramCounter}`;
+            params.push(parseInt(minWorkHours));
+            paramCounter++;
+        }
+        
+        if (maxWorkHours) {
+            query += ` AND projects.expected_work_hours <= $${paramCounter}`;
+            params.push(parseInt(maxWorkHours));
+            paramCounter++;
+        }
+
+        // Add skills filter if provided (comma-separated list of skill IDs)
+        if (skills) {
+            const skillIds = skills.split(',').map(id => parseInt(id.trim()));
+            if (skillIds.length > 0 && !skillIds.some(isNaN)) {
+                query += `
+                    AND projects.id IN (
+                        SELECT project_id 
+                        FROM project_skills 
+                        WHERE skill_id IN (${skillIds.map((_, i) => `$${paramCounter + i}`).join(',')})
+                    )
+                `;
+                params.push(...skillIds);
+                paramCounter += skillIds.length;
+            }
+        }
+
+        // Add the grouping and final ordering
+        query += ` GROUP BY projects.id, users.name ORDER BY projects.created_at DESC`;
+
+        const result = await pool.query(query, params);
         res.json(result.rows);
     } catch (err) {
-        console.error('Error fetching projects:', err);
+        console.error('Error fetching filtered projects:', err);
         res.status(500).json({ error: 'Failed to fetch projects' });
     }
 });
 
-// GET /api/proposals/freelancer - Get all proposals by current freelancer
-router.get('/proposals/my', requireFreelancer, async (req, res) => {
-    try {
-        const result = await pool.query(`
-            SELECT 
-                p.*,
-                pr.title AS project_title,
-                pr.description AS project_description,
-                pr.budget AS project_budget,
-                pr.deadline AS project_deadline,
-                u.name AS client_name
-            FROM proposals p
-            JOIN projects pr ON p.project_id = pr.id
-            JOIN users u ON pr.client_id = u.id
-            WHERE p.freelancer_id = $1
-            ORDER BY p.submitted_at DESC
-        `, [req.user.id]);
-        res.json(result.rows);
-    } catch (err) {
-        console.error('Error fetching proposals:', err);
-        res.status(500).json({ error: 'Failed to fetch proposals' });
-    }
-});
 
 // Update the route to handle an array of skills
 router.post('/:id/skills', async (req, res) => {
@@ -373,4 +429,5 @@ router.put('/:id/complete', requireClient, async (req, res) => {
         return res.status(500).json({ error: 'Server error' });
     }
 });
+
 module.exports = router;

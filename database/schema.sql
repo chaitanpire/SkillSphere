@@ -59,8 +59,10 @@ CREATE TABLE projects (
     deadline DATE,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    expected_work_hours INTEGER,
     status VARCHAR(20) CHECK (status IN ('open', 'in_progress', 'completed', 'cancelled')) DEFAULT 'open',
     UNIQUE (title, client_id) -- Ensure a client cannot post two projects with the same title
+
 );
 
 CREATE TABLE project_skills (

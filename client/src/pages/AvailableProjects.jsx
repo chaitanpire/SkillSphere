@@ -1,55 +1,105 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import '../styles/ProjectList.css'; // Use your consistent style sheet
+import ProjectFilters from '../components/ProjectFilters';
+import '../styles/ProjectList.css';
 
 export default function FreelancerProjects() {
   const [projects, setProjects] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [showFilters, setShowFilters] = useState(false);
+  const [activeFilters, setActiveFilters] = useState({});
   const navigate = useNavigate();
 
-  useEffect(() => {
-    const fetchProjects = async () => {
-      try {
-        const response = await fetch('http://localhost:4000/api/projects/available', {
-          headers: {
-            Authorization: `Bearer ${localStorage.getItem('token')}`,
-            'Content-Type': 'application/json'
-          }
-        });
+  const fetchProjects = async (filters = {}) => {
+    try {
+      setLoading(true);
 
-        if (!response.ok) {
-          throw new Error('Failed to fetch projects');
+      // Build query string from filters
+      const queryParams = new URLSearchParams();
+
+      if (filters.minBudget) queryParams.append('minBudget', filters.minBudget);
+      if (filters.maxBudget) queryParams.append('maxBudget', filters.maxBudget);
+      if (filters.minWorkHours) queryParams.append('minWorkHours', filters.minWorkHours);
+      if (filters.maxWorkHours) queryParams.append('maxWorkHours', filters.maxWorkHours);
+      if (filters.skills) queryParams.append('skills', filters.skills);
+
+      const queryString = queryParams.toString();
+      const url = `http://localhost:4000/api/projects/available${queryString ? `?${queryString}` : ''}`;
+
+      const response = await fetch(url, {
+        headers: {
+          Authorization: `Bearer ${localStorage.getItem('token')}`,
+          'Content-Type': 'application/json'
         }
+      });
 
-        const data = await response.json();
-        setProjects(data);
-      } catch (err) {
-        setError(err.message);
-      } finally {
-        setLoading(false);
+      if (!response.ok) {
+        throw new Error('Failed to fetch projects');
       }
-    };
 
+      const data = await response.json();
+      setProjects(data);
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
     fetchProjects();
   }, []);
+
+  const handleApplyFilters = (filters) => {
+    setActiveFilters(filters);
+    fetchProjects(filters);
+  };
+
+  const toggleFilters = () => {
+    setShowFilters(!showFilters);
+  };
 
   if (loading) return <div className="loading">Loading available projects...</div>;
 
   return (
     <div className="projects-container">
-      <h2>Available Projects</h2>
+      <div className="projects-header">
+        <h2>Available Projects</h2>
+        <button
+          className="filter-toggle"
+          onClick={toggleFilters}
+        >
+          {showFilters ? 'Hide Filters' : 'Show Filters'}
+        </button>
+      </div>
+
+      {showFilters && (
+        <ProjectFilters onApplyFilters={handleApplyFilters} />
+      )}
 
       {error && (
         <div className="error">
           <p>{error}</p>
-          <button onClick={() => window.location.reload()}>Try Again</button>
+          <button onClick={() => fetchProjects()}>Try Again</button>
         </div>
       )}
 
       {projects.length === 0 ? (
         <div className="empty-state">
-          <p>No projects available at the moment.</p>
+          <p>
+            {Object.keys(activeFilters).length > 0
+              ? 'No projects match your filter criteria.'
+              : 'No projects available at the moment.'}
+          </p>
+          {Object.keys(activeFilters).length > 0 && (
+            <button
+              className="reset-filters"
+              onClick={() => handleApplyFilters({})}
+            >
+              Reset Filters
+            </button>
+          )}
         </div>
       ) : (
         <div className="projects-grid">
@@ -64,7 +114,21 @@ export default function FreelancerProjects() {
                 <p><strong>Description:</strong> {project.description}</p>
                 <p><strong>Budget:</strong> ₹{project.budget}</p>
                 <p><strong>Deadline:</strong> {new Date(project.deadline).toLocaleDateString()}</p>
+                {project.expected_work_hours && (
+                  <p><strong>Expected Work Hours:</strong> {project.expected_work_hours} hours</p>
+                )}
                 <p><strong>Client:</strong> {project.client_name}</p>
+
+                {project.skills && project.skills.length > 0 && (
+                  <div className="project-skills">
+                    <p><strong>Required Skills:</strong></p>
+                    <div className="skill-tags">
+                      {project.skills.map(skill => (
+                        <span key={skill.id} className="skill-tag">{skill.name}</span>
+                      ))}
+                    </div>
+                  </div>
+                )}
               </div>
 
               <div className="actions">

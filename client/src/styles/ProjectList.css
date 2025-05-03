@@ -119,3 +119,6 @@
 .view-button:hover {
     background-color: #364fc7;
 }
+.filter-toggle {
+    width: au;
+}
