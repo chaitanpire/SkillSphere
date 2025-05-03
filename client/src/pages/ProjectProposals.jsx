@@ -152,6 +152,8 @@ export default function ProjectProposals() {
     };
 
     const handleSummarize = async (proposalId, coverLetter) => {
+        setSummaries(prev => ({ ...prev, [proposalId]: 'Summarizing...' }));
+        
         try {
             const response = await fetch('https://models.aixplain.com/api/v1/chat/completions', {
                 method: 'POST',
@@ -276,10 +278,12 @@ export default function ProjectProposals() {
                                     </button>
                                 )}
                                 <div className='summary'>
+                                    {summaries[proposal.id] == undefined && (
                                     <button
                                         className="summary-button"
                                         onClick={() => handleSummarize(proposal.id, proposal.cover_letter)}
                                     > Summarise </button>
+                                    )}
                                     {summaries[proposal.id] && (
                                         <div className="summary">
                                             <h4>Summary:</h4>
@@ -287,7 +291,7 @@ export default function ProjectProposals() {
                                         </div>
                                     )}
                                 </div>
-
+                                
                                 <div className="cover-letter">
                                     <h4>Cover Letter:</h4>
                                     <div className="scrollable-box" style={{ maxHeight: '200px', overflowY: 'auto' }}>
@@ -312,12 +316,14 @@ export default function ProjectProposals() {
                                     <button
                                         onClick={() => handleAccept(proposal.id)}
                                         className="accept-button"
+                                        disabled={proposal.status !== 'pending'} // Disable button after action
                                     >
                                         Accept Proposal
                                     </button>
                                     <button
                                         onClick={() => setShowRejectModal(proposal.id)}
                                         className="reject-button"
+                                        disabled={proposal.status !== 'pending'} // Disable button after action
                                     >
                                         Reject
                                     </button>
