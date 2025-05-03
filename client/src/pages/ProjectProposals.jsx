@@ -14,6 +14,7 @@ export default function ProjectProposals() {
     const [sortBy, setSortBy] = useState('rating');
     const [rejectReason, setRejectReason] = useState('');
     const [showRejectModal, setShowRejectModal] = useState(null);
+    const [summaries, setSummaries] = useState({}); // State to store summaries
 
     useEffect(() => {
         if (!user || user.role !== 'client') {
@@ -150,6 +151,43 @@ export default function ProjectProposals() {
         }
     };
 
+    const handleSummarize = async (proposalId, coverLetter) => {
+        try {
+            const response = await fetch('https://models.aixplain.com/api/v1/chat/completions', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer 2daee4480c2a62f87e472fb681d871057dcece65c58c02c692cbd59470b215a0`
+                },
+                body: JSON.stringify({
+                    model: "6646261c6eb563165658bbb1",
+                    messages: [
+                        {
+                            role: "system",
+                            content: "You are a summarization assistant."
+                        },
+                        {
+                            role: "user",
+                            content: `Summarize the following text: ${coverLetter}`
+                        }
+                    ]
+                })
+            });
+
+            if (!response.ok) {
+                throw new Error('Failed to summarize the cover letter');
+            }
+
+            const data = await response.json();
+            const summary = data.choices[0].message.content;
+
+            setSummaries(prev => ({ ...prev, [proposalId]: summary }));
+        } catch (err) {
+            console.error('Error summarizing cover letter:', err);
+            alert('Failed to summarize the cover letter. Please try again.');
+        }
+    };
+
     const sortedProposals = [...proposals].sort((a, b) => {
         if (sortBy === 'rating') return b.freelancer_rating - a.freelancer_rating;
         return a.proposed_amount - b.proposed_amount;
@@ -237,6 +275,18 @@ export default function ProjectProposals() {
                                         Mark Project as Complete
                                     </button>
                                 )}
+                                <div className='summary'>
+                                    <button
+                                        className="summary-button"
+                                        onClick={() => handleSummarize(proposal.id, proposal.cover_letter)}
+                                    > Summarise </button>
+                                    {summaries[proposal.id] && (
+                                        <div className="summary">
+                                            <h4>Summary:</h4>
+                                            <p>{summaries[proposal.id]}</p>
+                                        </div>
+                                    )}
+                                </div>
 
                                 <div className="cover-letter">
                                     <h4>Cover Letter:</h4>
