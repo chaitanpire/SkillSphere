@@ -150,5 +150,31 @@ CREATE TABLE project_applications_history (
     success_score INTEGER,
     PRIMARY KEY (user_id, project_id)
 );
+CREATE OR REPLACE FUNCTION update_profile_rating()
+RETURNS TRIGGER AS $$
+BEGIN
+    -- Update the profile rating based on the average rating
+    -- for the user who was rated (rated_id)
+    UPDATE profiles
+    SET 
+        rating = (SELECT COALESCE(AVG(rating), 0.0) FROM ratings WHERE rated_id = NEW.rated_id),
+        updated_at = CURRENT_TIMESTAMP
+    WHERE user_id = NEW.rated_id;
+    
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+-- Create trigger to execute after INSERT, UPDATE, or DELETE on ratings table
+CREATE TRIGGER update_rating_after_insert_update
+AFTER INSERT OR UPDATE ON ratings
+FOR EACH ROW
+EXECUTE FUNCTION update_profile_rating();
+
+-- Create trigger to execute after DELETE on ratings table
+CREATE TRIGGER update_rating_after_delete
+AFTER DELETE ON ratings
+FOR EACH ROW
+EXECUTE FUNCTION update_profile_rating();
 
 CREATE INDEX project_apps_history_user_id_idx ON project_applications_history(user_id);
