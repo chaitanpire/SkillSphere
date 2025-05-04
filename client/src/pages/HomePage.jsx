@@ -29,6 +29,9 @@ const HomePage = () => {
                         </a>
                     </div>
                 </div>
+                <div className="hero-image">
+                    <img src="src/images/office.avif" alt="People collaborating" />
+                </div>
             </header>
 
             <section className="features-section">
@@ -54,7 +57,7 @@ const HomePage = () => {
             <section className="testimonial-section">
                 <h2>What Our Users Say</h2>
                 <div className="testimonial-card">
-                    <p>"How are you missing it?"</p>
+                    <p>"How are you missing it!?"</p>
                     <div className="testimonial-author">
                         <img src="src/images/elecpendi.png" alt="Sarah J." className="author-avatar" />
                         <span>Elec Pendi, PW</span>
