@@ -129,12 +129,6 @@ export default function RecommendedProjects() {
     <div className="projects-container">
       <div className="projects-header">
         <h2>Recommended Projects</h2>
-        <button 
-          className="preferences-button"
-          onClick={() => setPreferencesOpen(!preferencesOpen)}
-        >
-          {preferencesOpen ? 'Hide Preferences' : 'Set Preferences'}
-        </button>
       </div>
 
       {preferencesOpen && (

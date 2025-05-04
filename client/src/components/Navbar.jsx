@@ -70,8 +70,8 @@ export default function Navbar() {
                     <>
                         <span className="divider">|</span>
                         <Link
-                            to="/my-proposals"
-                            className={`nav-link ${location.pathname === '/my-proposals' ? 'active-link' : ''}`}
+                            to="/proposals"
+                            className={`nav-link ${location.pathname === '/proposals' ? 'active-link' : ''}`}
                         >
                             My Proposals
                         </Link>

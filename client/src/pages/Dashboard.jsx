@@ -80,7 +80,7 @@ export default function Dashboard() {
             <p className="label">{role === 'client' ? 'Unassigned' : ''}</p>
           </div>
 
-          <div className="stat-card pending" onClick={() => navigate(role === 'client' ? '/client-projects?status=pending' : '/my-proposals')}>
+          <div className="stat-card pending" onClick={() => navigate(role === 'client' ? '/client-projects?status=pending' : '/proposals')}>
             <h3>Pending</h3>
             <p className="value">{stats?.pending || 0}</p>
             <p className="label">{role === 'client' ? 'In Progress' : 'Your proposals'}</p>
@@ -116,7 +116,7 @@ export default function Dashboard() {
                 console.log('Activity item clicked:', item);
                 if (item.type === 'message') navigate('/messages');
                 if (item.type === 'project') navigate(`/client-projects`);
-                if (item.type === 'proposal') navigate('/my-proposals');
+                if (item.type === 'proposal') navigate('/proposals');
               }}>
                 <div className="activity-icon">{getActivityIcon(item.type)}</div>
                 <div className="activity-content">

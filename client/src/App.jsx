@@ -96,7 +96,7 @@ function App() {
               }
             />
             <Route path="/projects/:id/propose" element={<ProposalForm />} />
-            <Route path="/my-proposals" element={<MyProposals />} />
+            <Route path="/proposals" element={<MyProposals />} />
             <Route path="/client-projects" element={<ClientProjects />} />
             <Route path="/projects/:id/proposals" element={<ErrorBoundary><ProjectProposals /></ErrorBoundary>} />
             <Route path="/messages" element={<MessagesInbox />} />
