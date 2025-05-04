@@ -36,6 +36,7 @@ router.get('/:id/proposals', requireClient, async (req, res) => {
             SELECT 
                 p.*,
                 u.name AS freelancer_name,
+                pr.location AS freelancer_location,
                 u.id AS freelancer_id,
                 COALESCE(AVG(r.rating), 0) AS freelancer_rating,
                 ARRAY_TO_STRING(ARRAY(
@@ -47,8 +48,9 @@ router.get('/:id/proposals', requireClient, async (req, res) => {
             FROM proposals p
             JOIN users u ON p.freelancer_id = u.id
             LEFT JOIN ratings r ON r.rated_id = p.freelancer_id
+            LEFT JOIN profiles pr ON pr.user_id = p.freelancer_id
             WHERE p.project_id = $1
-            GROUP BY p.id, u.name, u.id
+            GROUP BY p.id, u.name, u.id, pr.location
         `;
         
         // Add ORDER BY clause based on sortBy parameter
@@ -395,6 +397,7 @@ router.put('/:id/complete', requireClient, async (req, res) => {
     const projectId = req.params.id;
 
     try {
+        pool.query('BEGIN');
         console.log('✅ Marking project complete:', projectId);
 
         // Check if project exists and is in_progress
@@ -402,7 +405,7 @@ router.put('/:id/complete', requireClient, async (req, res) => {
             'SELECT status FROM projects WHERE id = $1',
             [projectId]
         );
-
+        console.log('Project status:', result.rows[0]);
         if (result.rows.length === 0) {
             return res.status(404).json({ error: 'Project not found' });
         }
@@ -418,7 +421,6 @@ router.put('/:id/complete', requireClient, async (req, res) => {
             'UPDATE projects SET status = $1 WHERE id = $2 RETURNING *',
             ['completed', projectId]
         );
-
         return res.json({
             ok: true,
             success: true,

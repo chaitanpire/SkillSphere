@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useNavigate } from 'react-router-dom';
 import '../styles/Dashboard.css';
+import { Link } from 'react-router-dom';
 
 export default function Dashboard() {
   const { user, loading } = useAuth();
@@ -67,17 +68,16 @@ export default function Dashboard() {
       ) : (
         <div className="stats-grid">
           {role === 'freelancer' && (
-            <div className="stat-card earnings" onClick={() => navigate('/earnings')}>
+            <div className="stat-card earnings">
               <h3>Earnings</h3>
               <p className="value">₹{stats?.earnings?.toLocaleString() || '0'}</p>
-              <p className="label">This month</p>
             </div>
           )}
 
           <div className="stat-card projects" onClick={() => navigate(role === 'client' ? '/client-projects' : '/projects')}>
             <h3>{role === 'client' ? 'Your Projects' : 'Available Projects'}</h3>
             <p className="value">{role === 'client' ? stats?.your_projects : stats?.available_projects}</p>
-            <p className="label">{role === 'client' ? 'Unassigned' : 'New this week'}</p>
+            <p className="label">{role === 'client' ? 'Unassigned' : ''}</p>
           </div>
 
           <div className="stat-card pending" onClick={() => navigate(role === 'client' ? '/client-projects?status=pending' : '/my-proposals')}>
@@ -86,14 +86,24 @@ export default function Dashboard() {
             <p className="label">{role === 'client' ? 'In Progress' : 'Your proposals'}</p>
           </div>
 
-          <div className="stat-card completed" onClick={() => navigate(role === 'client' ? '/client-projects?status=completed' : '/completed-work')}>
+          <div className="stat-card completed" onClick={() => navigate(role === 'client' ? '/client-projects?status=completed' : `/projects/${user.id}`)}>
             <h3>Completed</h3>
             <p className="value">{stats?.completed || 0}</p>
             <p className="label">All time</p>
           </div>
         </div>
       )}
-
+      {role === 'freelancer' ?
+        <div className="dashboard-section">
+          <h3>Recommended for You</h3>
+          <Link to="/recommended-projects" className="view-all">
+            View All Recommendations
+          </Link>
+        </div>
+        :
+        <>
+        </>
+      }
 
       <div className="recent-activity">
         <h2>Recent Activity</h2>

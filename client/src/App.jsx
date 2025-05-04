@@ -18,6 +18,8 @@ import { Component } from 'react';
 import { SocketProvider } from './context/SocketContext';
 import MessagesInbox from './components/messages/MessagesInbox';
 import MessageThread from './components/messages/MessageThread';
+import RecommendedProjects from './pages/RecommendedProjects';
+import Projects from './pages/Projects';
 // import SkillSelector from './components/SkillSelector'; 
 
 
@@ -99,6 +101,8 @@ function App() {
             <Route path="/projects/:id/proposals" element={<ErrorBoundary><ProjectProposals /></ErrorBoundary>} />
             <Route path="/messages" element={<MessagesInbox />} />
             <Route path="/messages/:otherUserId" element={<MessageThread />} />
+            <Route path="/recommended-projects" element={<RecommendedProjects />} />
+            <Route path="/projects/:id" element={<Projects />} />
           </Routes>
 
         </Router>

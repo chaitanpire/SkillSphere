@@ -33,7 +33,8 @@ app.use('/api/projects', projectRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/dashboard', dashboardRoutes);
 app.use('/api/proposals', proposalRoutes);
-
+const recommendationRouter = require('./routes/recommendations');
+app.use('/api/recommendations', recommendationRouter);
 // Create HTTP server
 const server = http.createServer(app);
 const io = socketIo(server, {

@@ -78,6 +78,18 @@ export default function Navbar() {
                     </>
                 )}
 
+                {user.role === 'freelancer' && (
+                    <>
+                        <span className="divider">|</span>
+                        <Link
+                            to={`/projects/${user.id}`}
+                            className={`nav-link ${location.pathname === `projects/${user.id}` ? 'active-link' : ''}`}
+                        >
+                            My Projects
+                        </Link>
+                    </>
+                )}
+
                 <span className="divider">|</span>
                 <Link
                     to="/messages"

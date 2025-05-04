@@ -11,7 +11,6 @@ DROP TABLE IF EXISTS portfolios CASCADE;
 DROP TABLE IF EXISTS forum_posts CASCADE;
 DROP TABLE IF EXISTS forum_comments CASCADE;
 DROP TABLE IF EXISTS analytics_events CASCADE;
-DROP TABLE IF EXISTS transactions CASCADE;
 
 -- USERS
 CREATE TABLE users (
@@ -109,7 +108,9 @@ CREATE TABLE notifications (
     message TEXT,
     type VARCHAR(50),
     is_read BOOLEAN DEFAULT FALSE,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    link text
+
 );
 
 -- RATINGS
@@ -121,34 +122,7 @@ CREATE TABLE ratings (
     rating INTEGER CHECK (rating BETWEEN 1 AND 5),
     review TEXT,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-);
-
--- PORTFOLIOS
-CREATE TABLE portfolios (
-    id SERIAL PRIMARY KEY,
-    user_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
-    title VARCHAR(100),
-    description TEXT,
-    link TEXT,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-);
-
--- FORUM POSTS
-CREATE TABLE forum_posts (
-    id SERIAL PRIMARY KEY,
-    author_id INTEGER REFERENCES users(id),
-    title VARCHAR(255),
-    content TEXT,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-);
-
--- FORUM COMMENTS
-CREATE TABLE forum_comments (
-    id SERIAL PRIMARY KEY,
-    post_id INTEGER REFERENCES forum_posts(id) ON DELETE CASCADE,
-    author_id INTEGER REFERENCES users(id),
-    content TEXT,
-    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        cursor.execute("SELECT setval('_id_seq', 1, false);")
 );
 
 -- ANALYTICS (Example: simplified events table)
@@ -159,13 +133,29 @@ CREATE TABLE analytics_events (
     event_data JSONB,
     timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
--- TRANSACTIONS
-CREATE TABLE transactions (
-    id SERIAL PRIMARY KEY,
-    project_id INTEGER REFERENCES projects(id),
-    freelancer_id INTEGER REFERENCES users(id),
-    amount DECIMAL(10,2) NOT NULL,
-    transaction_date TIMESTAMP DEFAULT NOW(),
-    status VARCHAR(50) DEFAULT 'completed'
+-- Only add what's necessary for the four selected recommendation factors
+
+-- Track freelancer preferences for budget ranges and project categories
+CREATE TABLE freelancer_preferences (
+    user_id INTEGER PRIMARY KEY REFERENCES users(id) ON DELETE CASCADE,
+    min_budget DECIMAL(10,2),
+    max_budget DECIMAL(10,2),
+    preferred_categories JSONB, -- Store category preferences as a JSON array
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
-alter table notifications add column link text;
+
+-- Add a categories field to projects table to avoid creating a separate relation
+ALTER TABLE projects ADD COLUMN categories JSONB;
+
+-- Simple table to track project application history for better recommendations
+CREATE TABLE project_applications_history (
+    user_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
+    project_id INTEGER REFERENCES projects(id) ON DELETE CASCADE,
+    applied_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    success_score INTEGER, -- Score based on project completion and ratings (1-10)
+    PRIMARY KEY (user_id, project_id)
+);
+
+-- Index for faster queries
+CREATE INDEX project_apps_history_user_id_idx ON project_applications_history(user_id);

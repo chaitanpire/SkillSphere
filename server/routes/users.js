@@ -325,6 +325,39 @@ router.put('/:id/profile', async (req, res) => {
     }
 });
 
+router.get('/:id/projects', requireFreelancer, async (req, res) => {
+    const userId = parseInt(req.params.id);
+
+    if (isNaN(userId)) {
+        return res.status(400).json({ error: 'Invalid user ID' });
+    }
+
+    try {
+        const result = await pool.query(
+            `select p.id as id, p.title as title, p.description as description, 
+            p.status as status, p.expected_work_hours as expected_work,
+            pr.proposed_amount as proposed_amount, 
+            ARRAY_AGG(
+                    json_build_object('id', s.id, 'name', s.name)
+                ) FILTER (WHERE s.id IS NOT NULL) AS skills
+            from projects p
+            left join proposals pr on p.id = pr.project_id
+            left join project_skills ps on p.id = ps.project_id
+            left join skills s on ps.skill_id = s.id
+            where pr.freelancer_id = $1 and p.freelancer_id = $1
+            group by p.id, pr.proposed_amount, p.title, p.description, p.status, p.expected_work_hours
+            `,
+            [userId]
+        );
+
+        res.json(result.rows);
+    } catch (err) {
+        console.error('Error fetching projects:', err);
+        res.status(500).json({ error: 'Failed to fetch projects' });
+    }
+}
+);
+
 
 
 

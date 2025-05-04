@@ -12,7 +12,6 @@ export default function ProposalForm() {
     const [formData, setFormData] = useState({
         cover_letter: '',
         proposed_amount: '',
-        estimated_days: ''
     });
     const [errors, setErrors] = useState({});
     const [isSubmitting, setIsSubmitting] = useState(false);
@@ -74,12 +73,6 @@ export default function ProposalForm() {
             newErrors.proposed_amount = 'Please enter a valid positive number';
         }
 
-        if (!formData.estimated_days) {
-            newErrors.estimated_days = 'Estimated days is required';
-        } else if (isNaN(formData.estimated_days) || parseInt(formData.estimated_days) <= 0) {
-            newErrors.estimated_days = 'Please enter a valid number of days';
-        }
-
         setErrors(newErrors);
         return Object.keys(newErrors).length === 0;
     };
@@ -121,7 +114,6 @@ export default function ProposalForm() {
                 body: JSON.stringify({
                     cover_letter: formData.cover_letter,
                     proposed_amount: parseFloat(formData.proposed_amount),
-                    estimated_days: parseInt(formData.estimated_days)
                 })
             });
 
@@ -216,22 +208,6 @@ export default function ProposalForm() {
                         )}
                     </div>
 
-                    <div className="form-group">
-                        <label htmlFor="estimated_days">Estimated Completion (Days)</label>
-                        <input
-                            id="estimated_days"
-                            type="number"
-                            name="estimated_days"
-                            value={formData.estimated_days}
-                            onChange={handleChange}
-                            placeholder="Number of days needed"
-                            min="1"
-                            className={errors.estimated_days ? 'error' : ''}
-                        />
-                        {errors.estimated_days && (
-                            <span className="error-message">{errors.estimated_days}</span>
-                        )}
-                    </div>
                 </div>
 
                 <button

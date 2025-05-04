@@ -27,25 +27,28 @@ router.get('/stats/:userId', async (req, res) => {
     } else { // Freelancer
       const stats = await pool.query(`
         SELECT 
-          COUNT(*) AS available_projects,
-          COUNT(*) FILTER (WHERE p.status = 'open') AS new_this_week,
           COUNT(*) FILTER (WHERE pr.status = 'pending') AS pending_proposals,
-          COUNT(*) FILTER (WHERE p.status = 'completed') AS completed_projects,
-          COALESCE(SUM(t.amount), 0) AS earnings
+          COUNT(*) FILTER (WHERE pr.status = 'accepted' and p.status = 'completed') AS completed_projects
         FROM projects p
         LEFT JOIN proposals pr ON p.id = pr.project_id AND pr.freelancer_id = $1
-        LEFT JOIN transactions t ON t.freelancer_id = $1
-        WHERE p.status = 'open' OR pr.freelancer_id = $1
       `, [userId]);
       const stats2 = await pool.query(`
         SELECT
             COUNT(*) AS available_projects
             FROM projects
+            WHERE status = 'open';
             `);
+          const earnings = await pool.query(`
+        SELECT
+            SUM(proposed_amount) as earnings
+            FROM projects
+            left join proposals on projects.id = proposals.project_id
+            where projects.freelancer_id = $1 AND projects.status = 'completed' AND proposals.freelancer_id = $1
+            `, [userId])
 
       res.json({
         available_projects: stats2.rows[0].available_projects,
-        earnings: stats.rows[0].earnings,
+        earnings: earnings.rows[0].earnings,
         pending: stats.rows[0].pending_proposals,
         completed: stats.rows[0].completed_projects
       });

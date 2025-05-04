@@ -1,0 +1,168 @@
+/* RecommendedProjects.css */
+
+.recommended-projects-container {
+    margin-bottom: 30px;
+    padding: 20px;
+    background-color: #f8f9fa;
+    border-radius: 8px;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
+  }
+  
+  .recommended-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+  }
+  
+  .recommended-header h2 {
+    color: #2c3e50;
+    margin: 0;
+    font-size: 1.5rem;
+  }
+  
+  .recommendation-info {
+    display: flex;
+    align-items: center;
+    font-size: 0.9rem;
+    color: #6c757d;
+  }
+  
+  .info-icon {
+    margin-right: 5px;
+  }
+  
+  .recommended-projects-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 20px;
+  }
+  
+  .recommended-project-card {
+    background-color: white;
+    border-radius: 8px;
+    padding: 16px;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    display: flex;
+    flex-direction: column;
+    transition: transform 0.2s;
+    position: relative;
+    overflow: hidden;
+  }
+  
+  .recommended-project-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 6px 12px rgba(0, 0, 0, 0.15);
+  }
+  
+  .recommendation-score {
+    position: relative;
+    height: 4px;
+    background-color: #e9ecef;
+    border-radius: 2px;
+    margin-bottom: 16px;
+  }
+  
+  .score-indicator {
+    position: absolute;
+    top: 0;
+    left: 0;
+    height: 100%;
+    background: linear-gradient(90deg, #38b2ac 0%, #4299e1 100%);
+    border-radius: 2px;
+  }
+  
+  .match-text {
+    position: absolute;
+    right: 0;
+    top: -18px;
+    font-size: 0.8rem;
+    color: #4299e1;
+    font-weight: 600;
+  }
+  
+  .card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 12px;
+  }
+  
+  .card-header h3 {
+    margin: 0;
+    font-size: 1.1rem;
+    color: #2d3748;
+    line-height: 1.4;
+  }
+  
+  .budget {
+    background-color: #ebf8ff;
+    color: #3182ce;
+    padding: 4px 8px;
+    border-radius: 4px;
+    font-size: 0.9rem;
+    font-weight: 600;
+  }
+  
+  .description {
+    color: #4a5568;
+    font-size: 0.9rem;
+    margin-bottom: 12px;
+    line-height: 1.5;
+  }
+  
+  .project-skills {
+    margin-bottom: 12px;
+  }
+  
+  .skill-tags {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+  }
+  
+  .skill-tag {
+    background-color: #e6fffa;
+    color: #38b2ac;
+    padding: 4px 8px;
+    border-radius: 4px;
+    font-size: 0.8rem;
+  }
+  
+  .actions {
+    margin-top: auto;
+    display: flex;
+    justify-content: center;
+  }
+  
+  .view-button {
+    width: 100%;
+    padding: 8px 16px;
+    background-color: #4299e1;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 0.9rem;
+    font-weight: 600;
+    transition: background-color 0.2s;
+  }
+  
+  .view-button:hover {
+    background-color: #3182ce;
+  }
+  
+  @media (max-width: 768px) {
+    .recommended-header {
+      flex-direction: column;
+      align-items: flex-start;
+    }
+  
+    .recommendation-info {
+      margin-top: 10px;
+    }
+  
+    .recommended-projects-grid {
+      grid-template-columns: 1fr;
+    }
+  }

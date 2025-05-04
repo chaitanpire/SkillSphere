@@ -250,11 +250,11 @@ export default function ProjectProposals() {
                                     
                                     <div className="rating">
                                         {Array.from({ length: 5 }).map((_, i) => (
-                                            <span key={i} className={i < Math.floor(proposal.freelancer_rating || 0) ? 'filled' : ''}>
+                                            <span key={i} className={i < Math.floor(Number(proposal.freelancer_rating) || 0) ? 'filled' : ''}>
                                                 ★
                                             </span>
                                         ))}
-                                        <span>({(proposal.freelancer_rating || 0)})</span>
+                                        <span>({Number(proposal.freelancer_rating) || 0})</span>
                                     </div>
                                     <p className="freelancer-location">
                                         {proposal.freelancer_location || 'Location not specified'}
@@ -266,10 +266,9 @@ export default function ProjectProposals() {
                             <div className="proposal-details">
                                 <div className="proposal-meta">
                                     <p><strong>Amount:</strong> ₹{proposal.proposed_amount}</p>
-                                    <p><strong>Delivery Time:</strong> {proposal.estimated_days} days</p>
                                     <p><strong>Submitted:</strong> {new Date(proposal.submitted_at).toLocaleString()}</p>
                                 </div>
-                                {project?.status === 'in_progress' && (
+                                {project?.status === 'in_progress' && proposal?.status === 'accepted' && (
                                     <button
                                         className="mark-complete-button"
                                         onClick={handleMarkComplete}
