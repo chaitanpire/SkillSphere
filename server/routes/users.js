@@ -325,7 +325,7 @@ router.put('/:id/profile', async (req, res) => {
     }
 });
 
-router.get('/:id/projects', requireFreelancer, async (req, res) => {
+router.get('/:id/projects', async (req, res) => {
     const userId = parseInt(req.params.id);
 
     if (isNaN(userId)) {
@@ -334,19 +334,23 @@ router.get('/:id/projects', requireFreelancer, async (req, res) => {
 
     try {
         const result = await pool.query(
-            `select p.id as id, p.title as title, p.description as description, 
-            p.status as status, p.expected_work_hours as expected_work,
-            pr.proposed_amount as proposed_amount, 
-            ARRAY_AGG(
+            `SELECT 
+                p.id AS id, 
+                p.title AS title, 
+                p.description AS description, 
+                p.status AS status, 
+                p.expected_work_hours AS expected_work, 
+                p.budget AS proposed_amount, 
+                p.client_id AS client_id, -- Include client_id
+                ARRAY_AGG(
                     json_build_object('id', s.id, 'name', s.name)
                 ) FILTER (WHERE s.id IS NOT NULL) AS skills
-            from projects p
-            left join proposals pr on p.id = pr.project_id
-            left join project_skills ps on p.id = ps.project_id
-            left join skills s on ps.skill_id = s.id
-            where pr.freelancer_id = $1 and p.freelancer_id = $1
-            group by p.id, pr.proposed_amount, p.title, p.description, p.status, p.expected_work_hours
-            `,
+            FROM projects p
+            LEFT JOIN project_skills ps ON p.id = ps.project_id
+            LEFT JOIN skills s ON ps.skill_id = s.id
+            WHERE p.freelancer_id = $1
+            GROUP BY p.id
+            ORDER BY p.created_at DESC`,
             [userId]
         );
 
@@ -355,8 +359,7 @@ router.get('/:id/projects', requireFreelancer, async (req, res) => {
         console.error('Error fetching projects:', err);
         res.status(500).json({ error: 'Failed to fetch projects' });
     }
-}
-);
+});
 
 router.post('/ratings', async (req, res) => {   
     const raterId = req.user.id;

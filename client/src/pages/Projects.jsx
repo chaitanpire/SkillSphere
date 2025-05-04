@@ -89,6 +89,8 @@ export default function CompletedProjects() {
                                     </div>
                                 )}
                             </div>
+                            <button
+                                onClick={() => navigate(`/messages/${project.client_id}`)}>Message Client</button>
 
 
                         </div>
