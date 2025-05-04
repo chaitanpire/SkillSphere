@@ -24,6 +24,11 @@ CREATE TABLE users (
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
+-- Indexes for users table
+CREATE INDEX idx_users_id ON users (id);
+CREATE UNIQUE INDEX idx_users_email ON users (email);
+CREATE INDEX idx_users_role ON users (role);
+
 -- PROFILES
 CREATE TABLE profiles (
     user_id INTEGER PRIMARY KEY REFERENCES users(id) ON DELETE CASCADE,
@@ -36,11 +41,18 @@ CREATE TABLE profiles (
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
+-- Indexes for profiles table
+CREATE INDEX idx_profiles_user_id ON profiles (user_id);
+
 -- SKILLS
 CREATE TABLE skills (
     id SERIAL PRIMARY KEY,
     name VARCHAR(50) UNIQUE NOT NULL
 );
+
+-- Indexes for skills table
+CREATE INDEX idx_skills_id ON skills (id);
+CREATE UNIQUE INDEX idx_skills_name ON skills (name);
 
 -- USER SKILLS (MANY-TO-MANY)
 CREATE TABLE user_skills (
@@ -48,6 +60,10 @@ CREATE TABLE user_skills (
     skill_id INTEGER REFERENCES skills(id) ON DELETE CASCADE,
     PRIMARY KEY (user_id, skill_id)
 );
+
+-- Indexes for user_skills table
+CREATE INDEX idx_user_skills_user_id ON user_skills (user_id);
+CREATE INDEX idx_user_skills_skill_id ON user_skills (skill_id);
 
 -- PROJECTS
 CREATE TABLE projects (
@@ -63,8 +79,14 @@ CREATE TABLE projects (
     expected_work_hours INTEGER,
     status VARCHAR(20) CHECK (status IN ('open', 'in_progress', 'completed', 'cancelled')) DEFAULT 'open',
     categories JSONB,
-    UNIQUE (title, client_id)
+    -- UNIQUE (title, client_id)
 );
+
+-- Indexes for projects table
+CREATE INDEX idx_projects_id ON projects (id);
+CREATE INDEX idx_projects_client_id ON projects (client_id);
+CREATE INDEX idx_projects_freelancer_id ON projects (freelancer_id);
+CREATE INDEX idx_projects_status ON projects (status);
 
 -- PROJECT SKILLS (MANY-TO-MANY)
 CREATE TABLE project_skills (
@@ -74,8 +96,9 @@ CREATE TABLE project_skills (
     PRIMARY KEY (project_id, skill_id)
 );
 
-CREATE INDEX project_skills_project_id_idx ON project_skills(project_id);
-CREATE INDEX project_skills_skill_id_idx ON project_skills(skill_id);
+-- Indexes for project_skills table
+CREATE INDEX idx_project_skills_project_id ON project_skills (project_id);
+CREATE INDEX idx_project_skills_skill_id ON project_skills (skill_id);
 
 -- PROPOSALS
 CREATE TABLE proposals (
@@ -90,6 +113,12 @@ CREATE TABLE proposals (
     UNIQUE (project_id, freelancer_id)
 );
 
+-- Indexes for proposals table
+CREATE INDEX idx_proposals_id ON proposals (id);
+CREATE INDEX idx_proposals_project_id ON proposals (project_id);
+CREATE INDEX idx_proposals_freelancer_id ON proposals (freelancer_id);
+CREATE INDEX idx_proposals_status ON proposals (status);
+
 -- MESSAGES
 CREATE TABLE messages (
     id SERIAL PRIMARY KEY,
@@ -100,6 +129,11 @@ CREATE TABLE messages (
     sent_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     is_read BOOLEAN DEFAULT FALSE
 );
+
+-- Indexes for messages table
+CREATE INDEX idx_messages_sender_id ON messages (sender_id);
+CREATE INDEX idx_messages_receiver_id ON messages (receiver_id);
+CREATE INDEX idx_messages_is_read ON messages (is_read);
 
 -- NOTIFICATIONS
 CREATE TABLE notifications (
@@ -112,6 +146,10 @@ CREATE TABLE notifications (
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
+-- Indexes for notifications table
+CREATE INDEX idx_notifications_user_id ON notifications (user_id);
+CREATE INDEX idx_notifications_is_read ON notifications (is_read);
+
 -- RATINGS
 CREATE TABLE ratings (
     id SERIAL PRIMARY KEY,
@@ -122,6 +160,11 @@ CREATE TABLE ratings (
     review TEXT,
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
+
+-- Indexes for ratings table
+CREATE INDEX idx_ratings_rater_id ON ratings (rater_id);
+CREATE INDEX idx_ratings_rated_id ON ratings (rated_id);
+CREATE INDEX idx_ratings_project_id ON ratings (project_id);
 
 -- ANALYTICS EVENTS
 CREATE TABLE analytics_events (
@@ -142,6 +185,9 @@ CREATE TABLE freelancer_preferences (
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
+-- Indexes for freelancer_preferences table
+CREATE INDEX idx_freelancer_preferences_user_id ON freelancer_preferences (user_id);
+
 -- PROJECT APPLICATIONS HISTORY
 CREATE TABLE project_applications_history (
     user_id INTEGER REFERENCES users(id) ON DELETE CASCADE,
@@ -150,6 +196,11 @@ CREATE TABLE project_applications_history (
     success_score INTEGER,
     PRIMARY KEY (user_id, project_id)
 );
+
+-- Indexes for project_applications_history table
+CREATE INDEX idx_project_applications_history_user_id ON project_applications_history (user_id);
+CREATE INDEX idx_project_applications_history_project_id ON project_applications_history (project_id);
+
 CREATE OR REPLACE FUNCTION update_profile_rating()
 RETURNS TRIGGER AS $$
 BEGIN
