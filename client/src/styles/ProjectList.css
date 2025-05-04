@@ -120,5 +120,7 @@
     background-color: #364fc7;
 }
 .filter-toggle {
-    width: au;
+    display: inline-block;
+    width: auto;
+    margin-right: 1rem;
 }

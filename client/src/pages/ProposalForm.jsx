@@ -124,7 +124,7 @@ export default function ProposalForm() {
             }
 
             alert('Proposal submitted successfully!');
-            navigate('/freelancer/proposals');
+            navigate('/proposals');
         } catch (error) {
             console.error('Submission error:', error);
             alert(error.message || 'Failed to submit proposal');

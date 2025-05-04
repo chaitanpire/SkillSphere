@@ -129,7 +129,11 @@ export default function RecommendedProjects() {
     <div className="projects-container">
       <div className="projects-header">
         <h2>Recommended Projects</h2>
+        <button onClick={() => navigate('/projects')}>
+            Browse All Projects
+          </button>
       </div>
+      
 
       {preferencesOpen && (
         <div className="preferences-panel">
@@ -201,7 +205,7 @@ export default function RecommendedProjects() {
       {recommendedProjects.length === 0 && !error ? (
         <div className="empty-state">
           <p>No recommended projects available at the moment.</p>
-          <button onClick={() => navigate('/available-projects')}>
+          <button onClick={() => navigate('/projects')}>
             Browse All Projects
           </button>
         </div>

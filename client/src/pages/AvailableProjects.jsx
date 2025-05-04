@@ -71,6 +71,14 @@ export default function FreelancerProjects() {
     <div className="projects-container">
       <div className="projects-header">
         <h2>Available Projects</h2>
+
+        <button
+          className="filter-toggle"
+          onClick={() => navigate('/recommended-projects')}
+        >
+          Recommended Projects
+        </button>
+
         <button
           className="filter-toggle"
           onClick={toggleFilters}
