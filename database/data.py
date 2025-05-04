@@ -298,32 +298,6 @@ def generate_data():
                             (project_id, freelancer_id, cover_letter, proposed_amount, submitted_at, 'rejected')
                         )
         
-        # Create messages
-        print("Creating messages...")
-        # Generate 200 messages between random users
-        for i in range(200):
-            sender_id = random.choice([user['id'] for user in users])
-            
-            # Find a receiver that isn't the sender
-            receiver_candidates = [user['id'] for user in users if user['id'] != sender_id]
-            receiver_id = random.choice(receiver_candidates)
-            
-            content = fake.paragraph(nb_sentences=random.randint(1, 5))
-            subject = fake.sentence(nb_words=6)[:-1]  # Remove trailing period
-            is_read = random.random() < 0.7  # 70% chance message is read
-            
-            # Message sent between 0-60 days ago
-            days_ago = random.randint(0, 60)
-            sent_at = datetime.datetime.now() - datetime.timedelta(days=days_ago)
-            
-            cursor.execute(
-                """
-                INSERT INTO messages 
-                (sender_id, receiver_id, content, sent_at, subject, is_read) 
-                VALUES (%s, %s, %s, %s, %s, %s);
-                """,
-                (sender_id, receiver_id, content, sent_at, subject, is_read)
-            )
         
         # Create notifications
         print("Creating notifications...")
