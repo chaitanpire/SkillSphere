@@ -60,6 +60,11 @@ export default function FreelancerProjects() {
     setShowFilters(!showFilters);
   };
 
+  const handleResetFilters = () => {
+    setActiveFilters({});
+    fetchProjects({});
+  };
+
   if (loading) return <div className="loading">Loading available projects...</div>;
 
   return (
@@ -75,7 +80,10 @@ export default function FreelancerProjects() {
       </div>
 
       {showFilters && (
-        <ProjectFilters onApplyFilters={handleApplyFilters} />
+        <ProjectFilters 
+          onApplyFilters={handleApplyFilters} 
+          initialFilters={activeFilters} 
+        />
       )}
 
       {error && (
@@ -95,7 +103,7 @@ export default function FreelancerProjects() {
           {Object.keys(activeFilters).length > 0 && (
             <button
               className="reset-filters"
-              onClick={() => handleApplyFilters({})}
+              onClick={handleResetFilters}
             >
               Reset Filters
             </button>

@@ -15,6 +15,9 @@ export default function ProjectProposals() {
     const [rejectReason, setRejectReason] = useState('');
     const [showRejectModal, setShowRejectModal] = useState(null);
     const [summaries, setSummaries] = useState({}); // State to store summaries
+    const [showRatingModal, setShowRatingModal] = useState(false);
+    const [freelancerRating, setFreelancerRating] = useState(0);
+    const [ratingComment, setRatingComment] = useState('');
 
     useEffect(() => {
         if (!user || user.role !== 'client') {
@@ -129,6 +132,7 @@ export default function ProjectProposals() {
             setError(err.message);
         }
     };
+
     const handleMarkComplete = async () => {
         try {
             const token = localStorage.getItem('token');
@@ -143,17 +147,69 @@ export default function ProjectProposals() {
             if (!response.ok) throw new Error('Failed to mark project as complete');
 
             setProject(prev => ({ ...prev, status: 'completed' }));
-            // navigate to transactions page or show success message
-            alert('Project marked as complete. Please proceed to the transactions page.');
-            navigate('/transactions');
+
+            // Show rating modal instead of navigating away
+            setShowRatingModal(true);
         } catch (err) {
+            setError(err.message);
+        }
+    };
+
+    const handleSubmitRating = async () => {
+        // Find the accepted proposal to get the freelancer ID
+        const acceptedProposal = proposals.find(p => p.status === 'accepted');
+
+        if (!acceptedProposal) {
+            setError('Could not find the freelancer to rate');
+            return;
+        }
+
+        try {
+            const token = localStorage.getItem('token');
+            console.log('Submitting rating:', {
+                rated_id: acceptedProposal.freelancer_id,
+                project_id: projectId,
+                rating: freelancerRating,
+                comment: ratingComment
+            });
+
+            const response = await fetch(`http://localhost:4000/api/users/ratings`, {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    rated_id: acceptedProposal.freelancer_id,
+                    project_id: projectId,
+                    rating: freelancerRating,
+                    comment: ratingComment
+                })
+            });
+
+            if (!response.ok) {
+                const errorData = await response.json();
+                throw new Error(errorData.error || 'Failed to submit rating');
+            }
+
+            // Close the rating modal and stay on the same page
+            setShowRatingModal(false);
+
+            // Show success message
+            alert('Thank you for your rating! The project is now marked as complete.');
+
+            // Refresh the proposal data to show updated ratings
+            window.location.reload();
+
+        } catch (err) {
+            console.error('Rating submission error:', err);
             setError(err.message);
         }
     };
 
     const handleSummarize = async (proposalId, coverLetter) => {
         setSummaries(prev => ({ ...prev, [proposalId]: 'Summarizing...' }));
-        
+
         try {
             const response = await fetch('https://models.aixplain.com/api/v1/chat/completions', {
                 method: 'POST',
@@ -247,7 +303,7 @@ export default function ProjectProposals() {
                                             View Profile
                                         </button>
                                     </div>
-                                    
+
                                     <div className="rating">
                                         {Array.from({ length: 5 }).map((_, i) => (
                                             <span key={i} className={i < Math.floor(Number(proposal.freelancer_rating) || 0) ? 'filled' : ''}>
@@ -260,7 +316,7 @@ export default function ProjectProposals() {
                                         {proposal.freelancer_location || 'Location not specified'}
                                     </p>
                                 </div>
-                                
+
                             </div>
 
                             <div className="proposal-details">
@@ -278,10 +334,10 @@ export default function ProjectProposals() {
                                 )}
                                 <div className='summary'>
                                     {summaries[proposal.id] == undefined && (
-                                    <button
-                                        className="summary-button"
-                                        onClick={() => handleSummarize(proposal.id, proposal.cover_letter)}
-                                    > Summarise </button>
+                                        <button
+                                            className="summary-button"
+                                            onClick={() => handleSummarize(proposal.id, proposal.cover_letter)}
+                                        > Summarise </button>
                                     )}
                                     {summaries[proposal.id] && (
                                         <div className="summary">
@@ -290,7 +346,7 @@ export default function ProjectProposals() {
                                         </div>
                                     )}
                                 </div>
-                                
+
                                 <div className="cover-letter">
                                     <h4>Cover Letter:</h4>
                                     <div className="scrollable-box" style={{ maxHeight: '200px', overflowY: 'auto' }}>
@@ -364,6 +420,72 @@ export default function ProjectProposals() {
                                 className="confirm-reject-button"
                             >
                                 Confirm Rejection
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Rating Modal */}
+            {showRatingModal && (
+                <div className="modal-overlay">
+                    <div className="modal-content">
+                        <h3>Rate the Freelancer</h3>
+                        <p>Please rate the freelancer's work on this project:</p>
+
+                        <div className="rating-stars">
+                            {Array.from({ length: 5 }).map((_, i) => (
+                                <span
+                                    key={i}
+                                    className={i < freelancerRating ? 'star filled' : 'star'}
+                                    onClick={() => setFreelancerRating(i + 1)}
+                                    style={{
+                                        cursor: 'pointer',
+                                        fontSize: '2rem',
+                                        color: i < freelancerRating ? '#ffc107' : '#e4e5e9',
+                                        marginRight: '5px'
+                                    }}
+                                >
+                                    ★
+                                </span>
+                            ))}
+                            <span style={{ marginLeft: '10px' }}>
+                                {freelancerRating > 0 ? `${freelancerRating} star${freelancerRating > 1 ? 's' : ''}` : 'Select rating'}
+                            </span>
+                        </div>
+
+                        <div className="form-group">
+                            <label>Comments (optional):</label>
+                            <textarea
+                                value={ratingComment}
+                                onChange={(e) => setRatingComment(e.target.value)}
+                                placeholder="Share your experience working with this freelancer..."
+                                style={{ width: '100%', minHeight: '100px', padding: '8px', marginTop: '5px' }}
+                            />
+                        </div>
+
+                        <div className="modal-actions">
+                            <button
+                                onClick={() => setShowRatingModal(false)}
+                                className="cancel-button"
+                                style={{ marginRight: '10px' }}
+                            >
+                                Skip Rating
+                            </button>
+                            <button
+                                onClick={() => handleSubmitRating()}
+                                className="submit-rating-button"
+                                disabled={freelancerRating === 0}
+                                style={{
+                                    backgroundColor: freelancerRating > 0 ? '#4CAF50' : '#ccc',
+                                    color: 'white',
+                                    padding: '10px 15px',
+                                    border: 'none',
+                                    borderRadius: '4px',
+                                    cursor: freelancerRating > 0 ? 'pointer' : 'not-allowed'
+                                }}
+                            >
+                                Submit Rating
                             </button>
                         </div>
                     </div>

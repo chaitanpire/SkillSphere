@@ -358,6 +358,39 @@ router.get('/:id/projects', requireFreelancer, async (req, res) => {
 }
 );
 
+router.post('/ratings', async (req, res) => {   
+    const raterId = req.user.id;
+    const { rated_id, project_id, rating, comment } = req.body;
+
+    // Fixed validation - using rated_id instead of userId
+    if (!rated_id || !rating) {
+        return res.status(400).json({ error: 'User ID and rating are required' });
+    }
+
+    // Added validation for project_id
+    if (!project_id) {
+        return res.status(400).json({ error: 'Project ID is required' });
+    }
+
+    // Added validation for rating value
+    if (rating < 1 || rating > 5) {
+        return res.status(400).json({ error: 'Rating must be between 1 and 5' });
+    }
+
+    try {
+        const result = await pool.query(
+            `INSERT INTO ratings (rater_id, rated_id, project_id, rating, review)
+             VALUES ($1, $2, $3, $4, $5)
+             RETURNING *`,
+            [raterId, rated_id, project_id, rating, comment || null]
+        );
+
+        res.status(201).json(result.rows[0]);
+    } catch (err) {
+        console.error('Error adding rating:', err);
+        res.status(500).json({ error: 'Failed to add rating' });
+    }
+});
 
 
 

@@ -196,7 +196,7 @@ def generate_data():
             if not has_freelancer:
                 status = 'open'
             else:
-                status_weights = {'in_progress': 0.2, 'completed': 0.6, 'cancelled': 0.2}
+                status_weights = {'in_progress': 0.4, 'completed': 0.5, 'cancelled': 0.1}
                 status = random.choices(list(status_weights.keys()), 
                                        weights=list(status_weights.values()))[0]
             

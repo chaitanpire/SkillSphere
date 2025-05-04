@@ -1,15 +1,19 @@
 import React, { useState, useEffect } from 'react';
 import '../styles/ProjectFilters.css';
 
-const ProjectFilters = ({ onApplyFilters }) => {
+const ProjectFilters = ({ onApplyFilters, initialFilters = {} }) => {
+  // Initialize with processed initialFilters
   const [filters, setFilters] = useState({
-    minBudget: '',
-    maxBudget: '',
-    minWorkHours: '',
-    maxWorkHours: '',
-    skills: []
+    minBudget: initialFilters.minBudget || '',
+    maxBudget: initialFilters.maxBudget || '',
+    minWorkHours: initialFilters.minWorkHours || '',
+    maxWorkHours: initialFilters.maxWorkHours || '',
+    skills: initialFilters.skills ? initialFilters.skills.split(',').map(Number) : []
   });
+  const [activeFilters, setActiveFilters] = useState({ ...filters });
   const [availableSkills, setAvailableSkills] = useState([]);
+  const [filteredSkills, setFilteredSkills] = useState([]);
+  const [searchTerm, setSearchTerm] = useState('');
   const [loading, setLoading] = useState(false);
   const [expandedSections, setExpandedSections] = useState({
     budget: true,
@@ -17,12 +21,30 @@ const ProjectFilters = ({ onApplyFilters }) => {
     skills: true
   });
 
+  // Update filters when initialFilters prop changes
+  useEffect(() => {
+    setFilters({
+      minBudget: initialFilters.minBudget || '',
+      maxBudget: initialFilters.maxBudget || '',
+      minWorkHours: initialFilters.minWorkHours || '',
+      maxWorkHours: initialFilters.maxWorkHours || '',
+      skills: initialFilters.skills ? initialFilters.skills.split(',').map(Number) : []
+    });
+    setActiveFilters({
+      minBudget: initialFilters.minBudget || '',
+      maxBudget: initialFilters.maxBudget || '',
+      minWorkHours: initialFilters.minWorkHours || '',
+      maxWorkHours: initialFilters.maxWorkHours || '',
+      skills: initialFilters.skills ? initialFilters.skills.split(',').map(Number) : []
+    });
+  }, [initialFilters]);
+
   // Fetch available skills when component mounts
   useEffect(() => {
     const fetchSkills = async () => {
       setLoading(true);
       try {
-        const response = await fetch('http://localhost:4000/api/skills', {
+        const response = await fetch('http://localhost:4000/api/users/skills', {
           headers: {
             Authorization: `Bearer ${localStorage.getItem('token')}`,
             'Content-Type': 'application/json'
@@ -35,6 +57,7 @@ const ProjectFilters = ({ onApplyFilters }) => {
 
         const data = await response.json();
         setAvailableSkills(data);
+        setFilteredSkills(data);
       } catch (err) {
         console.error('Error fetching skills:', err);
       } finally {
@@ -44,6 +67,18 @@ const ProjectFilters = ({ onApplyFilters }) => {
 
     fetchSkills();
   }, []);
+
+  // Filter skills based on search term
+  useEffect(() => {
+    if (searchTerm.trim() === '') {
+      setFilteredSkills(availableSkills);
+    } else {
+      const filtered = availableSkills.filter(skill =>
+        skill.name.toLowerCase().includes(searchTerm.toLowerCase())
+      );
+      setFilteredSkills(filtered);
+    }
+  }, [searchTerm, availableSkills]);
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
@@ -58,7 +93,7 @@ const ProjectFilters = ({ onApplyFilters }) => {
       const updatedSkills = prev.skills.includes(skillId)
         ? prev.skills.filter(id => id !== skillId)
         : [...prev.skills, skillId];
-      
+
       return {
         ...prev,
         skills: updatedSkills
@@ -66,27 +101,38 @@ const ProjectFilters = ({ onApplyFilters }) => {
     });
   };
 
+  const handleSearchChange = (e) => {
+    setSearchTerm(e.target.value);
+  };
+
   const handleApplyFilters = () => {
     // Convert to appropriate types for backend
     const processedFilters = {
-      minBudget: filters.minBudget !== '' ? parseFloat(filters.minBudget) : null,
-      maxBudget: filters.maxBudget !== '' ? parseFloat(filters.maxBudget) : null,
-      minWorkHours: filters.minWorkHours !== '' ? parseInt(filters.minWorkHours) : null,
-      maxWorkHours: filters.maxWorkHours !== '' ? parseInt(filters.maxWorkHours) : null,
+      minBudget: filters.minBudget !== '' ? Number(filters.minBudget) : null,
+      maxBudget: filters.maxBudget !== '' ? Number(filters.maxBudget) : null,
+      minWorkHours: filters.minWorkHours !== '' ? Number(filters.minWorkHours) : null,
+      maxWorkHours: filters.maxWorkHours !== '' ? Number(filters.maxWorkHours) : null,
       skills: filters.skills.length > 0 ? filters.skills.join(',') : null
     };
-    
+
+    // Save the current filters as active filters
+    setActiveFilters({ ...filters });
+
     onApplyFilters(processedFilters);
   };
 
   const handleReset = () => {
-    setFilters({
+    const emptyFilters = {
       minBudget: '',
       maxBudget: '',
       minWorkHours: '',
       maxWorkHours: '',
       skills: []
-    });
+    };
+
+    setFilters(emptyFilters);
+    setActiveFilters(emptyFilters);
+    setSearchTerm('');
     onApplyFilters({});
   };
 
@@ -107,6 +153,29 @@ const ProjectFilters = ({ onApplyFilters }) => {
           </button>
         </div>
       </div>
+
+      {/* Active Filters Display */}
+      {(activeFilters.minBudget || activeFilters.maxBudget ||
+        activeFilters.minWorkHours || activeFilters.maxWorkHours ||
+        activeFilters.skills.length > 0) && (
+          <div className="active-filters">
+            <h4>Active Filters:</h4>
+            <div className="active-filters-content">
+              {activeFilters.minBudget && <span className="filter-tag">Min Budget: ₹{activeFilters.minBudget}</span>}
+              {activeFilters.maxBudget && <span className="filter-tag">Max Budget: ₹{activeFilters.maxBudget}</span>}
+              {activeFilters.minWorkHours && <span className="filter-tag">Min Hours: {activeFilters.minWorkHours}</span>}
+              {activeFilters.maxWorkHours && <span className="filter-tag">Max Hours: {activeFilters.maxWorkHours}</span>}
+              {activeFilters.skills.length > 0 && (
+                <span className="filter-tag">
+                  Skills: {activeFilters.skills.map(id => {
+                    const skill = availableSkills.find(s => s.id === id);
+                    return skill ? skill.name : null;
+                  }).filter(Boolean).join(', ')}
+                </span>
+              )}
+            </div>
+          </div>
+        )}
 
       <div className="filter-section">
         <div className="section-header" onClick={() => toggleSection('budget')}>
@@ -178,34 +247,57 @@ const ProjectFilters = ({ onApplyFilters }) => {
         )}
       </div>
 
-      {availableSkills.length > 0 && (
-        <div className="filter-section">
-          <div className="section-header" onClick={() => toggleSection('skills')}>
-            <h4>Required Skills</h4>
-            <span className="toggle-icon">
-              {expandedSections.skills ? '−' : '+'}
-            </span>
-          </div>
-          {expandedSections.skills && (
-            <div className="skills-filter">
-              {availableSkills.map(skill => (
-                <div key={skill.id} className="skill-option">
-                  <input
-                    type="checkbox"
-                    id={`skill-${skill.id}`}
-                    checked={filters.skills.includes(skill.id)}
-                    onChange={() => handleSkillChange(skill.id)}
-                  />
-                  <label htmlFor={`skill-${skill.id}`}>
-                    <span className="custom-checkbox"></span>
-                    {skill.name}
-                  </label>
-                </div>
-              ))}
-            </div>
-          )}
+      <div className="filter-section">
+        <div className="section-header" onClick={() => toggleSection('skills')}>
+          <h4>Required Skills</h4>
+          <span className="toggle-icon">
+            {expandedSections.skills ? '−' : '+'}
+          </span>
         </div>
-      )}
+        {expandedSections.skills && (
+          <div className="skills-filter">
+            <div className="skill-search-container">
+              <input
+                type="text"
+                placeholder="Search skills..."
+                value={searchTerm}
+                onChange={handleSearchChange}
+                className="skill-search-input"
+              />
+            </div>
+            {loading ? (
+              <div className="loading">Loading skills...</div>
+            ) : (
+              <div className="skills-list">
+                {filteredSkills.length > 0 ? (
+                  filteredSkills.map(skill => (
+                    <div
+                      key={skill.id}
+                      className={`skill-item ${filters.skills.includes(skill.id) ? 'selected' : ''}`}
+                      onClick={() => handleSkillChange(skill.id)}
+                    >
+                      {skill.name}
+                    </div>
+                  ))
+                ) : (
+                  <div className="no-results">
+                    {searchTerm ? 'No matching skills found' : 'No skills available'}
+                  </div>
+                )}
+              </div>
+            )}
+
+            {filters.skills.length > 0 && (
+              <div className="selected-skills">
+                <strong>Selected:</strong> {filters.skills.map(id => {
+                  const skill = availableSkills.find(s => s.id === id);
+                  return skill ? skill.name : null;
+                }).filter(Boolean).join(', ')}
+              </div>
+            )}
+          </div>
+        )}
+      </div>
 
       <button className="apply-filters-btn" onClick={handleApplyFilters}>
         Apply Filters

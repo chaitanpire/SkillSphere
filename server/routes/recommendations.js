@@ -73,8 +73,6 @@ router.get('/projects', requireFreelancer, async (req, res) => {
             }
         });
 
-        // Step 4: Find recommended projects based on all factors
-        // Using jsonb_array_elements to handle array comparisons properly
         const recommendationsQuery = `
             WITH project_skill_matches AS (
                 SELECT 
