@@ -1,6 +1,8 @@
 # Ignore everything by default
 *
 
+!README.md
+
 # Do not ignore this .gitignore file
 !.gitignore
 
