@@ -6,13 +6,11 @@ export default function RecommendedProjects() {
   const [recommendedProjects, setRecommendedProjects] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [preferencesOpen, setPreferencesOpen] = useState(false);
-  const [preferences, setPreferences] = useState({
-    min_budget: '',
-    max_budget: '',
-    preferred_categories: []
-  });
+  const [categories, setCategories] = useState([]);
   const navigate = useNavigate();
+
+  // Available categories
+  const availableCategories = ["Web Development", "Mobile App", "Design", "Writing", "Marketing", "Data Science", "AI/ML"];
 
   // Fetch recommended projects
   const fetchRecommendations = async () => {
@@ -31,7 +29,18 @@ export default function RecommendedProjects() {
 
       const data = await response.json();
       setRecommendedProjects(data.recommended_projects || []);
-      
+
+      // Extract categories from projects for the filter
+      if (data.recommended_projects?.length > 0) {
+        const projectCategories = new Set();
+        data.recommended_projects.forEach(project => {
+          if (project.categories && Array.isArray(project.categories)) {
+            project.categories.forEach(category => projectCategories.add(category));
+          }
+        });
+        setCategories(Array.from(projectCategories));
+      }
+
       // If there are no projects, check if any recommendation factors exist
       if (data.recommended_projects?.length === 0) {
         setError({
@@ -48,79 +57,9 @@ export default function RecommendedProjects() {
     }
   };
 
-  // Fetch current preferences
-  const fetchPreferences = async () => {
-    try {
-      const response = await fetch('http://localhost:4000/api/recommendations/preferences', {
-        headers: {
-          Authorization: `Bearer ${localStorage.getItem('token')}`,
-          'Content-Type': 'application/json'
-        }
-      });
-
-      if (response.ok) {
-        const data = await response.json();
-        setPreferences({
-          min_budget: data.min_budget || '',
-          max_budget: data.max_budget || '',
-          preferred_categories: data.preferred_categories || []
-        });
-      }
-    } catch (err) {
-      console.error('Error fetching preferences:', err);
-    }
-  };
-
-  // Save preferences
-  const savePreferences = async () => {
-    try {
-      const response = await fetch('http://localhost:4000/api/recommendations/preferences', {
-        method: 'POST',
-        headers: {
-          Authorization: `Bearer ${localStorage.getItem('token')}`,
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify(preferences)
-      });
-
-      if (response.ok) {
-        setPreferencesOpen(false);
-        fetchRecommendations(); // Refresh recommendations with new preferences
-      } else {
-        throw new Error('Failed to save preferences');
-      }
-    } catch (err) {
-      console.error('Error saving preferences:', err);
-    }
-  };
-
-  // Handle preference changes
-  const handlePreferenceChange = (e) => {
-    const { name, value } = e.target;
-    setPreferences(prev => ({ ...prev, [name]: value }));
-  };
-
-  // Handle category selection
-  const handleCategoryChange = (category) => {
-    setPreferences(prev => {
-      const categories = [...prev.preferred_categories];
-      if (categories.includes(category)) {
-        return {
-          ...prev,
-          preferred_categories: categories.filter(c => c !== category)
-        };
-      } else {
-        return {
-          ...prev,
-          preferred_categories: [...categories, category]
-        };
-      }
-    });
-  };
 
   useEffect(() => {
     fetchRecommendations();
-    fetchPreferences();
   }, []);
 
   if (loading) return <div className="loading">Finding projects for you...</div>;
@@ -129,61 +68,13 @@ export default function RecommendedProjects() {
     <div className="projects-container">
       <div className="projects-header">
         <h2>Recommended Projects</h2>
-        <button onClick={() => navigate('/projects')}>
+        <div className="header-actions">
+          <button onClick={() => navigate('/projects')}>
             Browse All Projects
           </button>
-      </div>
-      
-
-      {preferencesOpen && (
-        <div className="preferences-panel">
-          <h3>Recommendation Preferences</h3>
-          <div className="preferences-form">
-            <div className="form-group">
-              <label>Minimum Budget</label>
-              <input
-                type="number"
-                name="min_budget"
-                value={preferences.min_budget}
-                onChange={handlePreferenceChange}
-                placeholder="Min Budget"
-              />
-            </div>
-            
-            <div className="form-group">
-              <label>Maximum Budget</label>
-              <input
-                type="number"
-                name="max_budget"
-                value={preferences.max_budget}
-                onChange={handlePreferenceChange}
-                placeholder="Max Budget"
-              />
-            </div>
-            
-            <div className="form-group">
-              <label>Preferred Project Categories</label>
-              <div className="category-selection">
-                {["Web Development", "Mobile App", "Design", "Writing", "Marketing", "Data Science", "AI/ML"].map(category => (
-                  <div className="category-option" key={category}>
-                    <input
-                      type="checkbox"
-                      id={`category-${category}`}
-                      checked={preferences.preferred_categories.includes(category)}
-                      onChange={() => handleCategoryChange(category)}
-                    />
-                    <label htmlFor={`category-${category}`}>{category}</label>
-                  </div>
-                ))}
-              </div>
-            </div>
-            
-            <button className="save-preferences" onClick={savePreferences}>
-              Save Preferences
-            </button>
-          </div>
         </div>
-      )}
+      </div>
+
 
       {error && (
         <div className="recommendation-error">
@@ -217,6 +108,9 @@ export default function RecommendedProjects() {
                 <h3>{project.title}</h3>
                 <div className="match-indicator">
                   <span className="match-percentage">{Math.round(project.skill_match_percentage)}% Match</span>
+                  {project.hours_match_score > 0 && (
+                    <span className="hours-match"></span>
+                  )}
                 </div>
               </div>
 
@@ -234,6 +128,18 @@ export default function RecommendedProjects() {
                   <p className="matching-skills">
                     <strong>Matching Skills:</strong> {project.matching_skills} of {project.total_skills}
                   </p>
+                )}
+
+                {/* Show categories if available */}
+                {project.categories && project.categories.length > 0 && (
+                  <div className="project-categories">
+                    <strong>Categories:</strong>
+                    <div className="category-tags">
+                      {project.categories.map((category, index) => (
+                        <span key={index} className="category-tag">{category}</span>
+                      ))}
+                    </div>
+                  </div>
                 )}
               </div>
 

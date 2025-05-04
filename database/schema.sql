@@ -153,7 +153,7 @@ CREATE TABLE freelancer_preferences (
     user_id INTEGER PRIMARY KEY REFERENCES users(id) ON DELETE CASCADE,
     min_budget DECIMAL(10,2),
     max_budget DECIMAL(10,2),
-    preferred_categories JSONB,
+    expected_work_hours INTEGER, -- Changed from preferred_categories JSONB
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
@@ -287,7 +287,6 @@ AFTER INSERT OR UPDATE ON proposals
 FOR EACH ROW
 EXECUTE FUNCTION update_project_applications_history();
 
--- 3. Function and trigger to update project_applications_history when a project is completed
 CREATE OR REPLACE FUNCTION update_history_on_project_completion()
 RETURNS TRIGGER AS $$
 BEGIN
@@ -311,10 +310,10 @@ BEGIN
                 WHEN max_budget < NEW.budget * 1.2 THEN NEW.budget * 1.2
                 ELSE max_budget
             END,
-            -- Add this project's categories to preferred_categories if not already there
-            preferred_categories = CASE
-                WHEN preferred_categories IS NULL THEN NEW.categories
-                ELSE preferred_categories || NEW.categories
+            -- Update expected work hours based on this project
+            expected_work_hours = CASE
+                WHEN expected_work_hours IS NULL THEN NEW.expected_work_hours
+                ELSE (expected_work_hours + NEW.expected_work_hours) / 2 -- Average of current and new
             END,
             updated_at = CURRENT_TIMESTAMP
         WHERE user_id = NEW.freelancer_id;
@@ -329,15 +328,16 @@ AFTER UPDATE ON projects
 FOR EACH ROW
 EXECUTE FUNCTION update_history_on_project_completion();
 
--- 4. Function and trigger to update freelancer preferences when a proposal is submitted
+
+-- Changes to update_preferences_on_proposal function
 CREATE OR REPLACE FUNCTION update_preferences_on_proposal()
 RETURNS TRIGGER AS $$
 DECLARE
     project_budget DECIMAL;
-    project_categories JSONB;
+    project_work_hours INTEGER;
 BEGIN
     -- Get the project information
-    SELECT budget, categories INTO project_budget, project_categories
+    SELECT budget, expected_work_hours INTO project_budget, project_work_hours
     FROM projects WHERE id = NEW.project_id;
     
     -- Upsert into freelancer_preferences
@@ -345,7 +345,7 @@ BEGIN
         user_id, 
         min_budget, 
         max_budget, 
-        preferred_categories,
+        expected_work_hours,
         created_at,
         updated_at
     )
@@ -353,8 +353,7 @@ BEGIN
         NEW.freelancer_id,
         COALESCE((SELECT min_budget FROM freelancer_preferences WHERE user_id = NEW.freelancer_id), project_budget * 0.8),
         COALESCE((SELECT max_budget FROM freelancer_preferences WHERE user_id = NEW.freelancer_id), project_budget * 1.2),
-        COALESCE((SELECT preferred_categories FROM freelancer_preferences WHERE user_id = NEW.freelancer_id), '[]'::jsonb) || 
-            COALESCE(project_categories, '[]'::jsonb),
+        COALESCE((SELECT expected_work_hours FROM freelancer_preferences WHERE user_id = NEW.freelancer_id), project_work_hours),
         CURRENT_TIMESTAMP,
         CURRENT_TIMESTAMP
     )
@@ -362,13 +361,16 @@ BEGIN
     DO UPDATE SET 
         min_budget = LEAST(freelancer_preferences.min_budget, project_budget * 0.8),
         max_budget = GREATEST(freelancer_preferences.max_budget, project_budget * 1.2),
-        preferred_categories = freelancer_preferences.preferred_categories || 
-            COALESCE(project_categories, '[]'::jsonb),
+        expected_work_hours = CASE
+            WHEN freelancer_preferences.expected_work_hours IS NULL THEN project_work_hours
+            ELSE (freelancer_preferences.expected_work_hours + project_work_hours) / 2
+        END,
         updated_at = CURRENT_TIMESTAMP;
     
     RETURN NEW;
 END;
 $$ LANGUAGE plpgsql;
+
 
 CREATE TRIGGER update_preferences_on_proposal_submission
 AFTER INSERT ON proposals

@@ -51,12 +51,6 @@ proposal_statuses = ['pending', 'accepted', 'rejected']
 notification_types = ['new_message', 'proposal_accepted', 'project_completed', 'payment_received']
 event_types = ['login', 'search', 'view_profile', 'submit_proposal', 'complete_project']
 
-categories = [
-    'Web Development', 'Mobile App Development', 'Design', 'Writing', 
-    'Marketing', 'Data Science', 'Business', 'Admin Support',
-    'Customer Service', 'Sales', 'Accounting', 'Legal', 'Engineering',
-    'IT & Networking', 'Translation'
-]
 
 # List of users with emails and passwords for testing
 test_users = [
@@ -200,18 +194,16 @@ def generate_data():
                 status = random.choices(list(status_weights.keys()), 
                                        weights=list(status_weights.values()))[0]
             
-            # Random categories (1-3)
-            project_categories = json.dumps(random.sample(categories, random.randint(1, 3)))
             
             cursor.execute(
                 """
                 INSERT INTO projects 
                 (client_id, freelancer_id, title, description, budget, deadline, 
-                expected_work_hours, status, categories) 
-                VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s) RETURNING id;
+                expected_work_hours, status) 
+                VALUES (%s, %s, %s, %s, %s, %s, %s, %s) RETURNING id;
                 """,
                 (client_id, freelancer_id, title, description, budget, deadline,
-                expected_work_hours, status, project_categories)
+                expected_work_hours, status)
             )
             
             project_id = cursor.fetchone()[0]
@@ -229,9 +221,9 @@ def generate_data():
         print("Creating proposals...")
         for project_id in project_ids:
             # Get project details
-            cursor.execute("SELECT client_id, freelancer_id, budget, status FROM projects WHERE id = %s", (project_id,))
+            cursor.execute("SELECT client_id, freelancer_id, budget, status, expected_work_hours FROM projects WHERE id = %s", (project_id,))
             project = cursor.fetchone()
-            client_id, current_freelancer_id, budget, status = project
+            client_id, current_freelancer_id, budget, status, expected_work_hours = project
             
             # If project is open, add 1-5 proposals
             if status == 'open':
@@ -400,6 +392,37 @@ def generate_data():
                 VALUES (%s, %s, %s, %s);
                 """,
                 (user_id, event_type, event_data, timestamp)
+            )
+        
+        # Create freelancer preferences
+        print("Creating freelancer preferences...")
+        for freelancer_id in freelancer_ids:
+            # Get average expected work hours from completed projects
+            cursor.execute(
+                """
+                SELECT AVG(expected_work_hours) 
+                FROM projects 
+                WHERE freelancer_id = %s AND status = 'completed'
+                """,
+                (freelancer_id,)
+            )
+            avg_hours_result = cursor.fetchone()[0]
+            
+            # Default hours if no completed projects
+            expected_work_hours = int(avg_hours_result) if avg_hours_result else random.randint(10, 40)
+            
+            # Set reasonable budget range
+            min_budget = round(random.uniform(100, 1000), 2)
+            max_budget = round(min_budget * random.uniform(1.5, 3.0), 2)
+            
+            cursor.execute(
+                """
+                INSERT INTO freelancer_preferences 
+                (user_id, min_budget, max_budget, expected_work_hours) 
+                VALUES (%s, %s, %s, %s)
+                ON CONFLICT (user_id) DO NOTHING;
+                """,
+                (freelancer_id, min_budget, max_budget, expected_work_hours)
             )
         
         # Commit the changes
