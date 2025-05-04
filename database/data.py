@@ -298,39 +298,6 @@ def generate_data():
                             (project_id, freelancer_id, cover_letter, proposed_amount, submitted_at, 'rejected')
                         )
         
-        
-        # Create notifications
-        print("Creating notifications...")
-        # Generate 300 notifications for random users
-        for i in range(300):
-            user_id = random.choice([user['id'] for user in users])
-            notification_type = random.choice(notification_types)
-            
-            if notification_type == 'new_message':
-                message = f"You have a new message from {fake.name()}"
-                link = "/messages"
-            elif notification_type == 'proposal_accepted':
-                message = f"Your proposal for project '{fake.catch_phrase()}' has been accepted!"
-                link = f"/projects/{random.choice(project_ids)}"
-            elif notification_type == 'project_completed':
-                message = f"Project '{fake.catch_phrase()}' has been marked as completed."
-                link = f"/projects/{random.choice(project_ids)}"
-            
-            is_read = random.random() < 0.6  # 60% chance notification is read
-            
-            # Notification created between 0-30 days ago
-            days_ago = random.randint(0, 30)
-            created_at = datetime.datetime.now() - datetime.timedelta(days=days_ago)
-            
-            cursor.execute(
-                """
-                INSERT INTO notifications 
-                (user_id, message, type, is_read, created_at, link) 
-                VALUES (%s, %s, %s, %s, %s, %s);
-                """,
-                (user_id, message, notification_type, is_read, created_at, link)
-            )
-        
         # Create ratings
         print("Creating ratings...")
         # For completed projects, create ratings
@@ -434,50 +401,6 @@ def generate_data():
                 """,
                 (user_id, event_type, event_data, timestamp)
             )
-        
-        
-        # Create freelancer preferences
-        print("Creating freelancer preferences...")
-        for freelancer_id in freelancer_ids:
-            min_budget = round(random.uniform(100, 1000), 2)
-            max_budget = round(min_budget * random.uniform(2, 5), 2)
-            
-            # 2-4 preferred categories
-            preferred_categories = json.dumps(random.sample(categories, random.randint(2, 4)))
-            
-            cursor.execute(
-                """
-                INSERT INTO freelancer_preferences 
-                (user_id, min_budget, max_budget, preferred_categories) 
-                VALUES (%s, %s, %s, %s);
-                """,
-                (freelancer_id, min_budget, max_budget, preferred_categories)
-            )
-        
-        # Create project applications history
-        print("Creating project applications history...")
-        # For each freelancer, add 5-15 project application history records
-        for freelancer_id in freelancer_ids:
-            num_applications = random.randint(5, 15)
-            # Get random projects
-            application_projects = random.sample(project_ids, min(num_applications, len(project_ids)))
-            
-            for project_id in application_projects:
-                # Application happened between 30-180 days ago
-                days_ago = random.randint(30, 180)
-                applied_at = datetime.datetime.now() - datetime.timedelta(days=days_ago)
-                
-                # Success score between 1-10
-                success_score = random.randint(1, 10)
-                
-                cursor.execute(
-                    """
-                    INSERT INTO project_applications_history 
-                    (user_id, project_id, applied_at, success_score) 
-                    VALUES (%s, %s, %s, %s);
-                    """,
-                    (freelancer_id, project_id, applied_at, success_score)
-                )
         
         # Commit the changes
         conn.commit()
