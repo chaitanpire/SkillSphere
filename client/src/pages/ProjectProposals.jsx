@@ -211,25 +211,12 @@ export default function ProjectProposals() {
         setSummaries(prev => ({ ...prev, [proposalId]: 'Summarizing...' }));
 
         try {
-            const response = await fetch('https://models.aixplain.com/api/v1/chat/completions', {
+            const response = await fetch('http://localhost:4000/api/summarize', {
                 method: 'POST',
                 headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer 2daee4480c2a62f87e472fb681d871057dcece65c58c02c692cbd59470b215a0`
+                    'Content-Type': 'application/json'
                 },
-                body: JSON.stringify({
-                    model: "6646261c6eb563165658bbb1",
-                    messages: [
-                        {
-                            role: "system",
-                            content: "You are a summarization assistant."
-                        },
-                        {
-                            role: "user",
-                            content: `Summarize the following text: ${coverLetter}`
-                        }
-                    ]
-                })
+                body: JSON.stringify({ coverLetter })
             });
 
             if (!response.ok) {
@@ -237,9 +224,7 @@ export default function ProjectProposals() {
             }
 
             const data = await response.json();
-            const summary = data.choices[0].message.content;
-
-            setSummaries(prev => ({ ...prev, [proposalId]: summary }));
+            setSummaries(prev => ({ ...prev, [proposalId]: data.summary }));
         } catch (err) {
             console.error('Error summarizing cover letter:', err);
             alert('Failed to summarize the cover letter. Please try again.');

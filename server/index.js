@@ -23,6 +23,7 @@ const userRoutes = require('./routes/users');
 const dashboardRoutes = require('./routes/dashboard');
 const proposalRoutes = require('./routes/proposals');
 const messagesRouter = require('./routes/messages');
+const summarizeRouter = require('./routes/summarize');
 // Add this near the top with other requires
 const authenticate = require('./middleware/authenticate');
 // Then modify your messages route to use the middleware:
@@ -35,6 +36,7 @@ app.use('/api/dashboard', dashboardRoutes);
 app.use('/api/proposals', proposalRoutes);
 const recommendationRouter = require('./routes/recommendations');
 app.use('/api/recommendations', recommendationRouter);
+app.use('/api/summarize', summarizeRouter);
 // Create HTTP server
 const server = http.createServer(app);
 const io = socketIo(server, {
